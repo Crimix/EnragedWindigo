@@ -27,3 +27,6 @@ Route::get('password/reset/{token}', 'Auth\ForgotPasswordController@showResetFor
 Route::post('password/reset', 'Auth\ForgotPasswordController@reset');
 
 Route::get('/home', 'HomeController@index')->name('home');
+
+Route::get('/twitter/init', 'TwitterRequestController@init')->name('twitter.init');
+Route::get('/twitter/callback', 'TwitterRequestController@callback')->name('twitter.callback');
