@@ -38,6 +38,7 @@ return [
     'twitter' => [
         'key' => env('TWITTER_CONSUMER_KEY'),
         'secret' => env('TWITTER_CONSUMER_SECRET'),
+        'use_oob' => env('TWITTER_USE_OOB', false),
     ],
 
 ];

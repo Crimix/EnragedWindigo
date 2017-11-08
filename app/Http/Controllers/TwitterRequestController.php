@@ -11,61 +11,179 @@ class TwitterRequestController extends Controller
     /**
      * 
      */
-    public function init(TwitterOAuth $twitter) {
-        // TODO: Request token with callback url (oauth/request_token)
-        // TODO: Create unique ID and store in session
-        // TODO: Store token vars in session
-        // TODO: Fetch authorize url (oauth/authorize)
-        // TODO: Redirect
+    public function __construct()
+    {
+        $this->middleware('twitter.auth')->only(['create', 'store', 'done']);
     }
 
     /**
-     * 
+     * Initialises a new Twitter Auth request, clearing existing tokens if any exist.
      */
-    public function callbackHandler() {
-        // TODO: Check if request was denied and redirect if so.
-        // TODO: Retrieve tokens from session.
-        // TODO: If tokens are incorrect, remove the session vars and redirect.
-        // TODO: Instantiate TwitterOAuth object with user auth params
-        // TODO: Request access token (oauth/access_token) using the 'oauth_verifier' request param
-        // TODO: If succeeded, remove the token and token secret, and store the access token
-        // TODO: Redirect to request creation form
+    public function init(TwitterOAuth $twitter)
+    {
+        if (!empty(session('twitter_oauth_token'))) {
+            $this->clearSession(true);
+
+            return redirect()->route('twitter.init');
+        }
+
+        $useOob = config('services.twitter.use_oob');
+        $callback = ($useOob ? 'oob' : route('twitter.callback'));
+        $requestToken = $twitter->oauth('oauth/request_token', ['oauth_callback' => $callback]);
+        $resultCode = $twitter->getLastHttpCode();
+
+        if ($resultCode == 200) {
+            session([
+                'twitter_request_ident' => $requestToken['twitter_oauth_token'],
+                'twitter_oauth_token' => $requestToken['twitter_oauth_token'],
+                'twitter_oauth_token_secret' => $requestToken['twitter_oauth_token_secret']
+            ]);
+
+            $authUrl = $twitter->url('oauth/authorize', ['twitter_oauth_token' => $requestToken['twitter_oauth_token']]);
+
+            if ($useOob) {
+                return view('twitter.enter_pin', ['authUrl' => $authUrl]);
+            }
+
+            return redirect($authUrl);
+        } else {
+            session()->flash('error', 'Error connecting to Twitter.');
+
+            return redirect('/');
+        }
     }
 
     /**
-     * 
+     *
      */
-    public function create() {
-        // TODO: Require access token presence
-        // TODO: Display form
+    public function confirmKey(Request $request, TwitterOAuth $twitter)
+    {
+        $inputData = $request->validate([
+            'pin_number' => 'required|integer'
+        ]);
 
+        $pinNumber = $inputData['pin_number'];
+        $accessToken = $twitter->oauth('oauth/access_token', ['oauth_verifier' => $pinNumber]);
+        $resultCode = $twitter->getLastHttpCode();
+
+        if ($resultCode == 200) {
+            session(['twitter_access_token' => $accessToken]);
+
+            $this->clearSession();
+
+            return redirect()->route('twitter.create');
+        } else {
+            session()->flash('error', 'Unable to verify Twitter credentials.');
+
+            return redirect('/');
+        }
+    }
+
+    /**
+     *
+     */
+    public function callbackHandler(Request $request, TwitterOAuth $twitter)
+    {
+        if ($request->input('denied', false) || empty($request->input('oauth_verifier', null))) {
+            $this->clearSession(true);
+            session()->flash('error', 'Twitter auth denied!');
+
+            return redirect('/');
+        }
+
+        $requestToken = $this->getSessionRequestToken();
+
+        if (empty($requestToken['twitter_oauth_token']) || $requestToken['twitter_oauth_token'] !== $request->input('twitter_oauth_token', '')) {
+            $this->clearSession(true);
+            session()->flash('error', 'Incorrect OAuth token!');
+
+            return redirect('/');
+        }
+
+        $oauthVerifier = $request->input('oauth_verifier');
+        $accessToken = $twitter->oauth('oauth/access_token', ['oauth_verifier' => $oauthVerifier]);
+        $resultCode = $twitter->getLastHttpCode();
+
+        if ($resultCode == 200) {
+            session(['twitter_access_token' => $accessToken]);
+
+            $this->clearSession();
+
+            return redirect('twitter.create');
+        } else {
+            session()->flash('error', 'Unable to verify Twitter credentials.');
+
+            return redirect('/');
+        }
+    }
+
+    /**
+     *
+     */
+    public function create()
+    {
         return view('twitter.create');
     }
 
     /**
-     * 
+     *
      */
-    public function store(Request $request) {
-        // TODO: Require access token presence
-        // TODO: Validate input
+    public function store(Request $request)
+    {
+        $validatedInput = $request->validate([
+            'twitterUser' => 'required|string|alpha_dash',
+            'userEmail' => 'required|string|email'
+        ]);
+
+        $validatedInput['request_ident'] = session('twitter_request_ident');
+        $validatedInput['access_token'] = session('twitter_access_token');
+
+        // TODO: Verify "request_ident"
+
+        $twitterRequest = TwitterRequest::create($validatedInput);
+
+        $twitterRequest->save();
+
+        return redirect()->route('twitter.done', ['twitterRequest' => $twitterRequest])
+
         // TODO: Create and store TwitterRequest
         // TODO: Add sending-task to local queue
         // TODO: Redirect to verification page
     }
 
     /**
-     * 
+     *
      */
-    public function done(TwitterRequest $twitterRequest) {
+    public function done(TwitterRequest $twitterRequest)
+    {
         // TODO: Display the details of the request
 
         return view('twitter.done', ['twitterRequest' => $twitterRequest]);
     }
 
     /**
-     * 
+     *
      */
-    public function missingAuth() {
+    public function missingAuth()
+    {
         return view('twitter.missingAuth');
+    }
+
+    private function getSessionRequestToken()
+    {
+        $request_token = [];
+        $request_token['twitter_oauth_token'] = session('twitter_oauth_token');
+        $request_token['twitter_oauth_token_secret'] = session('twitter_oauth_token_secret');
+
+        return $request_token;
+    }
+
+    private function clearSession($all = false)
+    {
+        session()->forget(['twitter_oauth_token', 'twitter_oauth_token_secret']);
+
+        if ($all) {
+            session()->forget(['twitter_access_token', 'twitter_request_ident']);
+        }
     }
 }

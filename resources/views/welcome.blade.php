@@ -9,6 +9,7 @@
 
         <!-- Fonts -->
         <link href="https://fonts.googleapis.com/css?family=Raleway:100,600" rel="stylesheet" type="text/css">
+        <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 
         <!-- Styles -->
         <style>
@@ -87,10 +88,20 @@
                     Enraged Windigo
                 </div>
 
+                @if (session('error'))
+                <div class="alert alert-danger alert-dismissable">
+                    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+                    <strong>{{ session('error') }}</strong>
+                </div>
+                @endif
+
                 <div class="links">
                     <a href="https://github.com/Crimix/EnragedWindigo">GitHub</a>
+                    <a href="{{ route('twitter.init') }}">Start request</a>
                 </div>
             </div>
         </div>
+
+        <script src="{{ asset('js/app.js') }}"></script>
     </body>
 </html>

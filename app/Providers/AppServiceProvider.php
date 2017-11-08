@@ -25,8 +25,8 @@ class AppServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind('Abraham\TwitterOAuth\TwitterOAuth', function ($app) {
-            $userToken = session('twitter_user_token', null);
-            $userTokenSecret = session('twitter_user_token_secret', null);
+            $userToken = session('twitter_oauth_token', null);
+            $userTokenSecret = session('twitter_oauth_token_secret', null);
             $consumerKey = config('services.twitter.key', null);
             $consumerSecret = config('services.twitter.secret', null);
 
