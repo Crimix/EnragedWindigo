@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\TwitterRequest;
+use App\Jobs\ForwardTwitterRequest;
 use Illuminate\Http\Request;
 use Abraham\TwitterOAuth\TwitterOAuth;
+use Carbon\Carbon;
 
 class TwitterRequestController extends Controller
 {
@@ -13,7 +15,7 @@ class TwitterRequestController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('twitter.auth')->only(['create', 'store', 'done']);
+        $this->middleware('twitter.auth')->only(['create', 'store']);
     }
 
     /**
@@ -22,7 +24,7 @@ class TwitterRequestController extends Controller
     public function init(TwitterOAuth $twitter)
     {
         if (!empty(session('twitter_oauth_token'))) {
-            $this->clearSession(true);
+            $this->clearSessionVars(true);
 
             return redirect()->route('twitter.init');
         }
@@ -34,12 +36,12 @@ class TwitterRequestController extends Controller
 
         if ($resultCode == 200) {
             session([
-                'twitter_request_ident' => $requestToken['twitter_oauth_token'],
-                'twitter_oauth_token' => $requestToken['twitter_oauth_token'],
-                'twitter_oauth_token_secret' => $requestToken['twitter_oauth_token_secret']
+                'twitter_request_ident' => $requestToken['oauth_token'],
+                'twitter_oauth_token' => $requestToken['oauth_token'],
+                'twitter_oauth_token_secret' => $requestToken['oauth_token_secret']
             ]);
 
-            $authUrl = $twitter->url('oauth/authorize', ['twitter_oauth_token' => $requestToken['twitter_oauth_token']]);
+            $authUrl = $twitter->url('oauth/authorize', ['oauth_token' => $requestToken['oauth_token']]);
 
             if ($useOob) {
                 return view('twitter.enter_pin', ['authUrl' => $authUrl]);
@@ -69,7 +71,7 @@ class TwitterRequestController extends Controller
         if ($resultCode == 200) {
             session(['twitter_access_token' => $accessToken]);
 
-            $this->clearSession();
+            $this->clearSessionVars();
 
             return redirect()->route('twitter.create');
         } else {
@@ -85,7 +87,7 @@ class TwitterRequestController extends Controller
     public function callbackHandler(Request $request, TwitterOAuth $twitter)
     {
         if ($request->input('denied', false) || empty($request->input('oauth_verifier', null))) {
-            $this->clearSession(true);
+            $this->clearSessionVars(true);
             session()->flash('error', 'Twitter auth denied!');
 
             return redirect('/');
@@ -94,7 +96,7 @@ class TwitterRequestController extends Controller
         $requestToken = $this->getSessionRequestToken();
 
         if (empty($requestToken['twitter_oauth_token']) || $requestToken['twitter_oauth_token'] !== $request->input('twitter_oauth_token', '')) {
-            $this->clearSession(true);
+            $this->clearSessionVars(true);
             session()->flash('error', 'Incorrect OAuth token!');
 
             return redirect('/');
@@ -107,7 +109,7 @@ class TwitterRequestController extends Controller
         if ($resultCode == 200) {
             session(['twitter_access_token' => $accessToken]);
 
-            $this->clearSession();
+            $this->clearSessionVars();
 
             return redirect('twitter.create');
         } else {
@@ -131,12 +133,12 @@ class TwitterRequestController extends Controller
     public function store(Request $request)
     {
         $validatedInput = $request->validate([
-            'twitterUser' => 'required|string|alpha_dash',
-            'userEmail' => 'required|string|email'
+            'twitter_username' => 'required|string|alpha_dash',
+            'email' => 'required|string|email'
         ]);
 
         $validatedInput['request_ident'] = session('twitter_request_ident');
-        $validatedInput['access_token'] = session('twitter_access_token');
+        $validatedInput['access_token'] = json_encode(session('twitter_access_token'));
 
         // TODO: Verify "request_ident"
 
@@ -144,11 +146,10 @@ class TwitterRequestController extends Controller
 
         $twitterRequest->save();
 
-        return redirect()->route('twitter.done', ['twitterRequest' => $twitterRequest])
-
-        // TODO: Create and store TwitterRequest
-        // TODO: Add sending-task to local queue
-        // TODO: Redirect to verification page
+        dd(ForwardTwitterRequest::dispatch($twitterRequest)->delay(Carbon::now()->addMinutes(5)));
+        $this->clearSessionVars(true);
+        
+        return redirect()->route('twitter.done', ['twitterRequest' => $twitterRequest]);
     }
 
     /**
@@ -156,8 +157,6 @@ class TwitterRequestController extends Controller
      */
     public function done(TwitterRequest $twitterRequest)
     {
-        // TODO: Display the details of the request
-
         return view('twitter.done', ['twitterRequest' => $twitterRequest]);
     }
 
@@ -178,7 +177,7 @@ class TwitterRequestController extends Controller
         return $request_token;
     }
 
-    private function clearSession($all = false)
+    private function clearSessionVars($all = false)
     {
         session()->forget(['twitter_oauth_token', 'twitter_oauth_token_secret']);
 

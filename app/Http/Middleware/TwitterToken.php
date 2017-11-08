@@ -15,9 +15,9 @@ class TwitterToken
     public function handle($request, Closure $next)
     {
         $accessToken = session('twitter_access_token', '');
-        $validToken = (strpos('oauth_token=', $accessToken) !== false) && (strpos('oauth_token_secret=', $accessToken) !== false);
+        $validToken = is_array($accessToken) && !empty($accessToken['oauth_token']) && !empty($accessToken['oauth_token_secret']);
 
-        if (empty($accessToken) || !$validToken) {
+        if (!$validToken) {
             return redirect()->route('twitter.missingAuth');
         }
 

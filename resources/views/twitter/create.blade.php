@@ -14,24 +14,24 @@
         </div>
       </div>
       
-      <div class="form-group{{ $errors->has('twitterUser') ? ' has-error' : '' }}">
-        <label for="twitterUser" class="control-label">Username</label>
-        <input type="text" id="twitterUser" name="twitterUser" class="form-control" required>
+      <div class="form-group{{ $errors->has('twitter_username') ? ' has-error' : '' }}">
+        <label for="twitter_username" class="control-label">Username</label>
+        <input type="text" id="twitter_username" name="twitter_username" class="form-control" required>
 
-        @if ($errors->has('twitterUser'))
+        @if ($errors->has('twitter_username'))
           <span class="help-block">
-            <strong>{{ $errors->first('twitterUser') }}</strong>
+            <strong>{{ $errors->first('twitter_username') }}</strong>
           </span>
         @endif
       </div>
 
-      <div class="form-group{{ $errors->has('userEmail') ? ' has-error' : '' }}">
-        <label for="userEmail" class="control-label">Email-address</label>
-        <input type="text" id="userEmail" name="userEmail" class="form-control" required>
+      <div class="form-group{{ $errors->has('email') ? ' has-error' : '' }}">
+        <label for="email" class="control-label">Email-address</label>
+        <input type="text" id="email" name="email" class="form-control" required>
 
-        @if ($errors->has('userEmail'))
+        @if ($errors->has('email'))
           <span class="help-block">
-            <strong>{{ $errors->first('userEmail') }}</strong>
+            <strong>{{ $errors->first('email') }}</strong>
           </span>
         @endif
       </div>
