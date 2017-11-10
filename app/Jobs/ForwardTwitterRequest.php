@@ -30,8 +30,8 @@ class ForwardTwitterRequest implements ShouldQueue
      *
      * @return void
      */
-    public function handle()
+    public function handle(GuzzleHttp\Client $httpClient)
     {
-        // TODO: Send request to server.
+        //
     }
 }
