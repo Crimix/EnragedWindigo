@@ -146,7 +146,6 @@ class TwitterRequestController extends Controller
 
         $twitterRequest->save();
 
-        dd(ForwardTwitterRequest::dispatch($twitterRequest)->delay(Carbon::now()->addMinutes(5)));
         $this->clearSessionVars(true);
         
         return redirect()->route('twitter.done', ['twitterRequest' => $twitterRequest]);
