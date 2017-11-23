@@ -18,13 +18,20 @@
       </div>
     </div>
   </div>
+
+  <!-- Twitter verification modal -->
 </template>
 
 <script>
   export default {
     data() {
       return {
-        isContained: false
+        isContained: false,
+
+        form: {
+          user: "",
+          errors: []
+        }
       };
     },
 
@@ -34,7 +41,7 @@
       checkUser() {
         axios.get('/twitter/vue/check', {
           params: {
-            tuser: this.form.tuser
+            tuser: this.form.user
           }
         })
         .then(response => {
