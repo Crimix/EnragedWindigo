@@ -119,6 +119,61 @@ class TwitterRequestController extends Controller
         }
     }
 
+    public function test()
+    {
+        return view('twitter.test');
+    }
+
+    public function vueCheck(Request $request)
+    {
+        $validatedData = $request->validate([
+            'twitter_user' => 'required|string|alpha_dash',
+        ]);
+
+        // TODO: Contact the DB server
+        $hasRecent = false;
+        $twitterLink = '';
+
+        if (!$hasRecent) {
+            if (!empty(session('twitter_oauth_token'))) {
+                $this->clearSessionVars(true);
+    
+                return redirect()->route('twitter.init');
+            }
+    
+            $useOob = config('services.twitter.use_oob');
+            $callback = ($useOob ? 'oob' : route('twitter.callback'));
+            $requestToken = $twitter->oauth('oauth/request_token', ['oauth_callback' => $callback]);
+            $resultCode = $twitter->getLastHttpCode();
+    
+            if ($resultCode == 200) {
+                session([
+                    'twitter_request_ident' => $requestToken['oauth_token'],
+                    'twitter_oauth_token' => $requestToken['oauth_token'],
+                    'twitter_oauth_token_secret' => $requestToken['oauth_token_secret']
+                ]);
+    
+                $authUrl = $twitter->url('oauth/authorize', ['oauth_token' => $requestToken['oauth_token']]);
+    
+                if ($useOob) {
+                    return view('twitter.enter_pin', ['authUrl' => $authUrl]);
+                }
+    
+                return redirect($authUrl);
+            } else {
+                session()->flash('error', 'Error connecting to Twitter.');
+    
+                return redirect('/');
+            }
+        }
+
+        return response()->json([
+            'hasRecent' => $hasRecent,
+            'twitterLink' => $twitterLink,
+            'redirectTo' => 'https://www.twitter.com/' . $validatedData['twitter_user'],
+        ]);
+    }
+
     /**
      *
      */

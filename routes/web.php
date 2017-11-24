@@ -34,4 +34,7 @@ Route::post('/twitter/confirm_key', 'TwitterRequestController@confirmKey')->name
 Route::get('/twitter/create', 'TwitterRequestController@create')->name('twitter.create');
 Route::post('/twitter/create', 'TwitterRequestController@store')->name('twitter.store');
 Route::get('/twitter/missing_auth', 'TwitterRequestController@missingAuth')->name('twitter.missingAuth');
+Route::post('/twitter/vue/check', 'TwitterRequestController@vueCheck');
+Route::post('/twitter/vue/check_pin', 'TwitterRequestController@vueCheckPin');
+Route::get('/twitter/test', 'TwitterRequestController@test');
 Route::get('/twitter/{twitterRequest}', 'TwitterRequestController@done')->name('twitter.done');

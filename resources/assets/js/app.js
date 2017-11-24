@@ -16,6 +16,7 @@ window.Vue = require('vue');
  */
 
 Vue.component('example-component', require('./components/ExampleComponent.vue'));
+Vue.component('twitter-entry-form', require('./components/TwitterEntryForm.vue'));
 
 const app = new Vue({
     el: '#app'
