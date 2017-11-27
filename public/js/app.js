@@ -43303,6 +43303,8 @@ module.exports = function listToStyles (parentId, list) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 //
 //
 //
@@ -43438,23 +43440,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         if (response.data.hasRecent) {
           console.log('This would redirect to: ' + response.data.redirectTo);
         } else {
+          _this.twitterLink = response.data.twitterLink;
           $('#modal-twitter-verification').modal('show');
         }
       }).catch(function (error) {
         if (error.response) {
-          var errors = error.response.data.errors;
+          _this.unpackErrorList(error.response.data.errors, _this.form);
 
-          _this.form.errors = [];
-
-          for (var key in errors) {
-            if (errors.hasOwnProperty(key)) {
-              var elementErrors = errors[key];
-
-              for (var i = 0; i < elementErrors.length; i++) {
-                _this.form.errors.push(elementErrors[i]);
-              }
-            }
-          }
           console.log(error.response);
         } else {
           _this.form.errors = ['Request failed with an undefined error!'];
@@ -43473,6 +43465,29 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         console.log(error);
         _this2.pinForm.errors = ["Request failed!"];
       });
+    },
+    unpackErrorList: function unpackErrorList(errors, elem) {
+      elem.errors = [];
+
+      if ((typeof errors === "undefined" ? "undefined" : _typeof(errors)) === "object") {
+        for (var key in errors) {
+          if (errors.hasOwnProperty(key)) {
+            var elementErrors = errors[key];
+
+            if (!Array.isArray(elementErrors)) {
+              elem.errors.push(elementErrors);
+            } else {
+              for (var i = 0; i < elementErrors.length; i++) {
+                elem.errors.push(elementErrors[i]);
+              }
+            }
+          }
+        }
+      } else if (Array.isArray(errors)) {
+        elem.errors = errors;
+      } else {
+        elem.errors = [errors];
+      }
     }
   }
 });

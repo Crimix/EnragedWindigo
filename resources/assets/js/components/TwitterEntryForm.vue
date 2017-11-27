@@ -81,12 +81,12 @@
             <form class="form" role="form" @submit.prevent="verifyPin">
               <div class="form-group">
                 <label class="control-label">Twitter PIN</label>
-                <input id="twitter-pin" class="form-control" name="pin" v-model="pinForm.pin">
+                <input id="twitter-pin" class="form-control" name="pin" v-model="pinForm.pin" required>
               </div>
 
               <div class="form-group">
                 <label class="control-label">Your email</label>
-                <input id="user-email" class="form-control" name="email" v-model="pinForm.email">
+                <input id="user-email" class="form-control" name="email" v-model="pinForm.email" required>
               </div>
             </form>
           </div>
@@ -132,24 +132,14 @@
           if (response.data.hasRecent) {
             console.log('This would redirect to: ' + response.data.redirectTo);
           } else {
+            this.twitterLink = response.data.twitterLink;
             $('#modal-twitter-verification').modal('show');
           }
         })
         .catch(error => {
           if (error.response) {
-            let errors = error.response.data.errors;
+            this.unpackErrorList(error.response.data.errors, this.form);
 
-            this.form.errors = [];
-
-            for (var key in errors) {
-              if (errors.hasOwnProperty(key)) {
-                var elementErrors = errors[key];
-
-                for (var i = 0; i < elementErrors.length; i++) {
-                  this.form.errors.push(elementErrors[i]);
-                }
-              }
-            }
             console.log(error.response);
           } else {
             this.form.errors = ['Request failed with an undefined error!'];
@@ -160,15 +150,46 @@
 
       verifyPin() {
         axios.post('/twitter/vue/check_pin', {
-          "pin_number": this.pinForm.pin
+          'pin_number': this.pinForm.pin,
+          'email': this.pinForm.email
         })
         .then(response => {
           //
         })
         .catch(error => {
-          console.log(error);
-          this.pinForm.errors = ["Request failed!"];
+          if (error.response) {
+            this.unpackErrorList(error.response.data.errors, this.form);
+
+            console.log(error.response);
+          } else {
+            this.form.errors = ['Request failed with an undefined error!'];
+            console.log(error);
+          }
         })
+      },
+
+      unpackErrorList(errors, elem) {
+        elem.errors = [];
+
+        if (typeof errors === "object") {
+          for (var key in errors) {
+            if (errors.hasOwnProperty(key)) {
+              var elementErrors = errors[key];
+
+              if (!Array.isArray(elementErrors)) {
+                elem.errors.push(elementErrors);
+              } else {
+                for (var i = 0; i < elementErrors.length; i++) {
+                  elem.errors.push(elementErrors[i]);
+                }
+              }
+            }
+          }
+        } else if (Array.isArray(errors)) {
+          elem.errors = errors;
+        } else {
+          elem.errors = [errors];
+        }
       }
     }
   }

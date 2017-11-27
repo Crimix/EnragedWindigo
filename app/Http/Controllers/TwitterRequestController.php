@@ -7,11 +7,12 @@ use App\Jobs\ForwardTwitterRequest;
 use Illuminate\Http\Request;
 use Abraham\TwitterOAuth\TwitterOAuth;
 use Carbon\Carbon;
+use GuzzleHttp\Guzzle as GuzzleClient;
 
 class TwitterRequestController extends Controller
 {
     /**
-     * 
+     *
      */
     public function __construct()
     {
@@ -131,46 +132,61 @@ class TwitterRequestController extends Controller
         ]);
 
         // TODO: Contact the DB server
+        $guzzle = resolve('GuzzleHttp\Client', ['base_uri' => config('ewdb.url')]);
+        $guzzle->get(
+            '/api/twitter/' . $validatedData['twitter_user'],
+            [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Authorization' => 'Bearer ' . config('ewdb.token'),
+                ],
+            ]
+        );
+
         $hasRecent = false;
+        $redirectTo = '';
         $twitterLink = '';
+
+        if ($guzzle->getStatusCode() === 200) {
+            $body = $guzzle->getBody();
+
+            if (!empty($body)) {
+                $body = json_decode($body);
+                $hasRecent = true;
+
+                // TODO: Figure out the format of returned data
+                //$redirectTo = route('twitter.result', ['id' => $body['id']]);
+            }
+        }
 
         if (!$hasRecent) {
             if (!empty(session('twitter_oauth_token'))) {
                 $this->clearSessionVars(true);
-    
-                return redirect()->route('twitter.init');
             }
-    
-            $useOob = config('services.twitter.use_oob');
-            $callback = ($useOob ? 'oob' : route('twitter.callback'));
-            $requestToken = $twitter->oauth('oauth/request_token', ['oauth_callback' => $callback]);
-            $resultCode = $twitter->getLastHttpCode();
-    
+
+            $twitter      = resolve('Abraham\TwitterOAuth\TwitterOAuth');
+            $requestToken = $twitter->oauth('oauth/request_token', ['oauth_callback' => 'oob']);
+            $resultCode   = $twitter->getLastHttpCode();
+
             if ($resultCode == 200) {
                 session([
                     'twitter_request_ident' => $requestToken['oauth_token'],
                     'twitter_oauth_token' => $requestToken['oauth_token'],
                     'twitter_oauth_token_secret' => $requestToken['oauth_token_secret']
                 ]);
-    
-                $authUrl = $twitter->url('oauth/authorize', ['oauth_token' => $requestToken['oauth_token']]);
-    
-                if ($useOob) {
-                    return view('twitter.enter_pin', ['authUrl' => $authUrl]);
-                }
-    
-                return redirect($authUrl);
+
+                $twitterLink = $twitter->url('oauth/authorize', ['oauth_token' => $requestToken['oauth_token']]);
             } else {
-                session()->flash('error', 'Error connecting to Twitter.');
-    
-                return redirect('/');
+                return response()->json(
+                    ['errors' => ['Error connecting to Twitter. Please try again later.']],
+                    $resultCode);
             }
         }
 
         return response()->json([
             'hasRecent' => $hasRecent,
             'twitterLink' => $twitterLink,
-            'redirectTo' => 'https://www.twitter.com/' . $validatedData['twitter_user'],
+            'redirectTo' => $redirectTo,
         ]);
     }
 
@@ -202,7 +218,7 @@ class TwitterRequestController extends Controller
         $twitterRequest->save();
 
         $this->clearSessionVars(true);
-        
+
         return redirect()->route('twitter.done', ['twitterRequest' => $twitterRequest]);
     }
 
