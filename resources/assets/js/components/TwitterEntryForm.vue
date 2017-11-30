@@ -125,6 +125,8 @@
 
     methods: {
       checkUser() {
+        this.form.errors = [];
+
         axios.post('/twitter/vue/check', {
           twitter_user: this.form.user
         })
@@ -138,7 +140,7 @@
         })
         .catch(error => {
           if (error.response) {
-            this.unpackErrorList(error.response.data.errors, this.form);
+            this.unpackErrorList(error.response.data, this.form);
 
             console.log(error.response);
           } else {
@@ -149,6 +151,8 @@
       },
 
       verifyPin() {
+        this.pinForm.errors = [];
+
         axios.post('/twitter/vue/check_pin', {
           'pin_number': this.pinForm.pin,
           'email': this.pinForm.email
@@ -158,7 +162,7 @@
         })
         .catch(error => {
           if (error.response) {
-            this.unpackErrorList(error.response.data.errors, this.form);
+            this.unpackErrorList(error.response.data, this.pinForm);
 
             console.log(error.response);
           } else {
@@ -168,8 +172,16 @@
         })
       },
 
-      unpackErrorList(errors, elem) {
+      unpackErrorList(data, elem) {
+        var errors = 'Unknown error.';
+
         elem.errors = [];
+
+        if (data.hasOwnProperty('errors')) {
+          errors = data.errors;
+        } else if (data.hasOwnProperty('message')) {
+          errors = data.message;
+        }
 
         if (typeof errors === "object") {
           for (var key in errors) {

@@ -43434,6 +43434,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     checkUser: function checkUser() {
       var _this = this;
 
+      this.form.errors = [];
+
       axios.post('/twitter/vue/check', {
         twitter_user: this.form.user
       }).then(function (response) {
@@ -43445,7 +43447,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         }
       }).catch(function (error) {
         if (error.response) {
-          _this.unpackErrorList(error.response.data.errors, _this.form);
+          _this.unpackErrorList(error.response.data, _this.form);
 
           console.log(error.response);
         } else {
@@ -43457,17 +43459,34 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     verifyPin: function verifyPin() {
       var _this2 = this;
 
+      this.pinForm.errors = [];
+
       axios.post('/twitter/vue/check_pin', {
-        "pin_number": this.pinForm.pin
+        'pin_number': this.pinForm.pin,
+        'email': this.pinForm.email
       }).then(function (response) {
         //
       }).catch(function (error) {
-        console.log(error);
-        _this2.pinForm.errors = ["Request failed!"];
+        if (error.response) {
+          _this2.unpackErrorList(error.response.data, _this2.pinForm);
+
+          console.log(error.response);
+        } else {
+          _this2.form.errors = ['Request failed with an undefined error!'];
+          console.log(error);
+        }
       });
     },
-    unpackErrorList: function unpackErrorList(errors, elem) {
+    unpackErrorList: function unpackErrorList(data, elem) {
+      var errors = 'Unknown error.';
+
       elem.errors = [];
+
+      if (data.hasOwnProperty('errors')) {
+        errors = data.errors;
+      } else if (data.hasOwnProperty('message')) {
+        errors = data.message;
+      }
 
       if ((typeof errors === "undefined" ? "undefined" : _typeof(errors)) === "object") {
         for (var key in errors) {
@@ -43680,7 +43699,7 @@ var render = function() {
                         }
                       ],
                       staticClass: "form-control",
-                      attrs: { id: "twitter-pin", name: "pin" },
+                      attrs: { id: "twitter-pin", name: "pin", required: "" },
                       domProps: { value: _vm.pinForm.pin },
                       on: {
                         input: function($event) {
@@ -43708,7 +43727,7 @@ var render = function() {
                         }
                       ],
                       staticClass: "form-control",
-                      attrs: { id: "user-email", name: "email" },
+                      attrs: { id: "user-email", name: "email", required: "" },
                       domProps: { value: _vm.pinForm.email },
                       on: {
                         input: function($event) {

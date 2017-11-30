@@ -7,12 +7,12 @@ use App\Jobs\ForwardTwitterRequest;
 use Illuminate\Http\Request;
 use Abraham\TwitterOAuth\TwitterOAuth;
 use Carbon\Carbon;
-use GuzzleHttp\Guzzle as GuzzleClient;
+use GuzzleHttp\Client as GuzzleClient;
 
 class TwitterRequestController extends Controller
 {
     /**
-     *
+     * Instantiate controller and setup middleware.
      */
     public function __construct()
     {
@@ -21,6 +21,10 @@ class TwitterRequestController extends Controller
 
     /**
      * Initialises a new Twitter Auth request, clearing existing tokens if any exist.
+     *
+     * @param  TwitterOAuth $twitter
+     * @return \Illuminate\Http\Response
+     * @deprecated
      */
     public function init(TwitterOAuth $twitter)
     {
@@ -57,15 +61,15 @@ class TwitterRequestController extends Controller
     }
 
     /**
-     *
+     * @deprecated
      */
     public function confirmKey(Request $request, TwitterOAuth $twitter)
     {
-        $inputData = $request->validate([
+        $validatedInput = $request->validate([
             'pin_number' => 'required|integer'
         ]);
 
-        $pinNumber = $inputData['pin_number'];
+        $pinNumber = $validatedInput['pin_number'];
         $accessToken = $twitter->oauth('oauth/access_token', ['oauth_verifier' => $pinNumber]);
         $resultCode = $twitter->getLastHttpCode();
 
@@ -83,7 +87,7 @@ class TwitterRequestController extends Controller
     }
 
     /**
-     *
+     * @deprecated
      */
     public function callbackHandler(Request $request, TwitterOAuth $twitter)
     {
@@ -125,20 +129,27 @@ class TwitterRequestController extends Controller
         return view('twitter.test');
     }
 
+    public function show($id)
+    {
+        return view('twitter.show')->with(['twitterID' => $id]);
+    }
+
     public function vueCheck(Request $request)
     {
         $validatedData = $request->validate([
             'twitter_user' => 'required|string|alpha_dash',
         ]);
 
-        // TODO: Contact the DB server
-        $guzzle = resolve('GuzzleHttp\Client', ['base_uri' => config('ewdb.url')]);
-        $guzzle->get(
+        // TODO: Consider adding another route to the DB server that
+        //       doesn't return the full result.
+        $guzzle = new GuzzleClient(['base_uri' => config('ew.ewdb.url')]);
+        $response = $guzzle->request(
+            'GET',
             '/api/twitter/' . $validatedData['twitter_user'],
             [
                 'headers' => [
                     'Accept' => 'application/json',
-                    'Authorization' => 'Bearer ' . config('ewdb.token'),
+                    'Authorization' => 'Bearer ' . config('ew.ewdb.token'),
                 ],
             ]
         );
@@ -147,17 +158,21 @@ class TwitterRequestController extends Controller
         $redirectTo = '';
         $twitterLink = '';
 
-        if ($guzzle->getStatusCode() === 200) {
-            $body = $guzzle->getBody();
+        if ($response->getStatusCode() === 200) {
+            $body = $response->getBody();
 
-            if (!empty($body)) {
-                $body = json_decode($body);
+            if (!empty($body) && !empty($body = json_decode($body))) {
                 $hasRecent = true;
 
-                // TODO: Figure out the format of returned data
-                //$redirectTo = route('twitter.result', ['id' => $body['id']]);
+                // TODO: Figure out what the format should be like
+                $redirectTo = route('twitter.result', ['id' => $body['twitterID']]);
             }
         }
+
+        /*
+        [1:59 PM] James Don: localhost:62020/api/AnalyzeTwitterAccount
+        [2:00 PM] James Don: Token, Name, RequesterName, Secret
+        */
 
         if (!$hasRecent) {
             if (!empty(session('twitter_oauth_token'))) {
@@ -188,6 +203,35 @@ class TwitterRequestController extends Controller
             'twitterLink' => $twitterLink,
             'redirectTo' => $redirectTo,
         ]);
+    }
+
+    /**
+     *
+     */
+    public function vueCheckPin()
+    {
+        //
+        $validatedInput = $request->validate([
+            'pin_number' => 'required|integer',
+            'email' => 'required|email',
+        ]);
+
+        $twitter     = resolve('Abraham\TwitterOAuth\TwitterOAuth');
+        $accessToken = $twitter->oauth('oauth/access_token',
+                                        ['oauth_verifier' => $validatedInput['pin_number']]);
+        $resultCode  = $twitter->getLastHttpCode();
+
+        if ($resultCode == 200) {
+            session(['twitter_access_token' => $accessToken]);
+
+            $this->clearSessionVars();
+
+            return redirect()->route('twitter.create');
+        } else {
+            session()->flash('error', 'Unable to verify Twitter credentials.');
+
+            return redirect('/');
+        }
     }
 
     /**
