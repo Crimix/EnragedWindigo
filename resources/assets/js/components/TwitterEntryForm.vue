@@ -154,11 +154,13 @@
         this.pinForm.errors = [];
 
         axios.post('/twitter/vue/check_pin', {
+          'twitter_user': this.form.user,
           'pin_number': this.pinForm.pin,
           'email': this.pinForm.email
         })
         .then(response => {
-          //
+          console.log('This would redirect to: ' + response.data.redirectTo);
+          //window.location.href = response.data.redirectTo;
         })
         .catch(error => {
           if (error.response) {
@@ -166,7 +168,7 @@
 
             console.log(error.response);
           } else {
-            this.form.errors = ['Request failed with an undefined error!'];
+            this.pinForm.errors = ['Request failed with an undefined error!'];
             console.log(error);
           }
         })

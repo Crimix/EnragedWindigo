@@ -129,11 +129,17 @@ class TwitterRequestController extends Controller
         return view('twitter.test');
     }
 
+    /**
+     *
+     */
     public function show($id)
     {
         return view('twitter.show')->with(['twitterID' => $id]);
     }
 
+    /**
+     *
+     */
     public function vueCheck(Request $request)
     {
         $validatedData = $request->validate([
@@ -145,10 +151,10 @@ class TwitterRequestController extends Controller
         $guzzle = new GuzzleClient(['base_uri' => config('ew.ewdb.url')]);
         $response = $guzzle->request(
             'GET',
-            '/api/twitter/' . $validatedData['twitter_user'],
+            '/api/twitter/has/' . $validatedData['twitter_user'],
             [
                 'headers' => [
-                    'Accept' => 'application/json',
+                    'Accept'        => 'application/json',
                     'Authorization' => 'Bearer ' . config('ew.ewdb.token'),
                 ],
             ]
@@ -159,13 +165,11 @@ class TwitterRequestController extends Controller
         $twitterLink = '';
 
         if ($response->getStatusCode() === 200) {
-            $body = $response->getBody();
+            $recordId = intval($response->getBody());
 
-            if (!empty($body) && !empty($body = json_decode($body))) {
-                $hasRecent = true;
-
-                // TODO: Figure out what the format should be like
-                $redirectTo = route('twitter.result', ['id' => $body['twitterID']]);
+            if ($recordId > 0) {
+                $hasRecent  = true;
+                $redirectTo = route('twitter.result', ['id' => $recordId]);
             }
         }
 
@@ -185,8 +189,8 @@ class TwitterRequestController extends Controller
 
             if ($resultCode == 200) {
                 session([
-                    'twitter_request_ident' => $requestToken['oauth_token'],
-                    'twitter_oauth_token' => $requestToken['oauth_token'],
+                    'twitter_request_ident'      => $requestToken['oauth_token'],
+                    'twitter_oauth_token'        => $requestToken['oauth_token'],
                     'twitter_oauth_token_secret' => $requestToken['oauth_token_secret']
                 ]);
 
@@ -199,9 +203,9 @@ class TwitterRequestController extends Controller
         }
 
         return response()->json([
-            'hasRecent' => $hasRecent,
+            'hasRecent'   => $hasRecent,
             'twitterLink' => $twitterLink,
-            'redirectTo' => $redirectTo,
+            'redirectTo'  => $redirectTo,
         ]);
     }
 
@@ -210,10 +214,10 @@ class TwitterRequestController extends Controller
      */
     public function vueCheckPin()
     {
-        //
         $validatedInput = $request->validate([
-            'pin_number' => 'required|integer',
-            'email' => 'required|email',
+            'twitter_user' => 'required|string|alpha_dash',
+            'pin_number'   => 'required|integer',
+            'email'        => 'required|email',
         ]);
 
         $twitter     = resolve('Abraham\TwitterOAuth\TwitterOAuth');
@@ -221,17 +225,32 @@ class TwitterRequestController extends Controller
                                         ['oauth_verifier' => $validatedInput['pin_number']]);
         $resultCode  = $twitter->getLastHttpCode();
 
-        if ($resultCode == 200) {
-            session(['twitter_access_token' => $accessToken]);
-
-            $this->clearSessionVars();
-
-            return redirect()->route('twitter.create');
-        } else {
-            session()->flash('error', 'Unable to verify Twitter credentials.');
-
-            return redirect('/');
+        if ($resultCode != 200) {
+            return response()->json([
+                'errors' => ['Unable to verify PIN.']
+            ], 500);
         }
+
+        session(['twitter_access_token' => $accessToken]);
+
+        $twitterRequest = TwitterRequest::make([
+            'twitter_username' => $validatedInput['twitter_user'],
+            'email' => $validatedInput['email'],
+            'request_ident' => session('twitter_request_ident'),
+            'access_token' => json_encode($accessToken),
+        ]);
+
+        if (!$twitterRequest->save()) {
+            return response()->json([
+                'errors' => ['Unable to save request.'],
+            ], 500);
+        }
+
+        $this->clearSessionVars();
+
+        return response()->json([
+            'redirectTo' => route('twitter.done', ['twitterRequest' => $twitterRequest]),
+        ]);
     }
 
     /**
@@ -282,6 +301,9 @@ class TwitterRequestController extends Controller
         return view('twitter.missingAuth');
     }
 
+    /**
+     *
+     */
     private function getSessionRequestToken()
     {
         $request_token = [];
@@ -291,6 +313,9 @@ class TwitterRequestController extends Controller
         return $request_token;
     }
 
+    /**
+     *
+     */
     private function clearSessionVars($all = false)
     {
         session()->forget(['twitter_oauth_token', 'twitter_oauth_token_secret']);
