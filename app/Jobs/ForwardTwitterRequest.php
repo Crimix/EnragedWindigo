@@ -8,12 +8,14 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use GuzzleHttp\Client as GuzzleClient;
 
 class ForwardTwitterRequest implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $twitterRequest;
+    public     $tries = 10;
+    protected  $twitterRequest;
 
     /**
      * Create a new job instance.
@@ -30,8 +32,37 @@ class ForwardTwitterRequest implements ShouldQueue
      *
      * @return void
      */
-    public function handle(GuzzleHttp\Client $httpClient)
+    public function handle()
     {
-        //
+        if (empty($this->twitterRequest)) {
+            return;
+        }
+
+        $requestId   =
+            base64_encode($this->id . ':' . $this->request_ident . ':' . $this->twitter_username);
+        $accessToken = json_decode($this->twitterRequest->access_token, true);
+        $guzzle      = new GuzzleClient([
+            'base_uri'    => config('ew.queue.url'),
+            'http_errors' => false,
+        ]);
+        $response    = $guzzle->request(
+            'POST',
+            '/api/AnalyzeTwitterAccount',
+            [
+                'form_params' => [
+                    'Name'          => $this->twitterRequest->twitter_username,
+                    'Token'         => $accessToken['oauth_token'],
+                    'Secret'        => $accessToken['oauth_token_secret'],
+                    'RequestID'     => $requestId,
+                ],
+                'headers'     => [
+                    'Accept'        => 'application/json',
+                ],
+            ]
+        );
+
+        if ($response->getStatusCode() !== 200) {
+            throw new Exception("Error Processing Request", $response->getStatusCode());
+        }
     }
 }

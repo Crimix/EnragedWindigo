@@ -43421,6 +43421,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
       },
 
       pinForm: {
+        user: "",
         pin: "",
         email: "",
         errors: []
@@ -43440,7 +43441,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         twitter_user: this.form.user
       }).then(function (response) {
         if (response.data.hasRecent) {
-          console.log('This would redirect to: ' + response.data.redirectTo);
+          window.location.href = response.data.redirectTo;
         } else {
           _this.twitterLink = response.data.twitterLink;
           $('#modal-twitter-verification').modal('show');
@@ -43462,17 +43463,18 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
       this.pinForm.errors = [];
 
       axios.post('/twitter/vue/check_pin', {
+        'twitter_user': this.form.user,
         'pin_number': this.pinForm.pin,
         'email': this.pinForm.email
       }).then(function (response) {
-        //
+        window.location.href = response.data.redirectTo;
       }).catch(function (error) {
         if (error.response) {
           _this2.unpackErrorList(error.response.data, _this2.pinForm);
 
           console.log(error.response);
         } else {
-          _this2.form.errors = ['Request failed with an undefined error!'];
+          _this2.pinForm.errors = ['Request failed with an undefined error!'];
           console.log(error);
         }
       });

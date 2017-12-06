@@ -20,113 +20,11 @@ class TwitterRequestController extends Controller
     }
 
     /**
-     * Initialises a new Twitter Auth request, clearing existing tokens if any exist.
      *
-     * @param  TwitterOAuth $twitter
-     * @return \Illuminate\Http\Response
-     * @deprecated
      */
-    public function init(TwitterOAuth $twitter)
+    public function index()
     {
-        if (!empty(session('twitter_oauth_token'))) {
-            $this->clearSessionVars(true);
-
-            return redirect()->route('twitter.init');
-        }
-
-        $useOob = config('services.twitter.use_oob');
-        $callback = ($useOob ? 'oob' : route('twitter.callback'));
-        $requestToken = $twitter->oauth('oauth/request_token', ['oauth_callback' => $callback]);
-        $resultCode = $twitter->getLastHttpCode();
-
-        if ($resultCode == 200) {
-            session([
-                'twitter_request_ident' => $requestToken['oauth_token'],
-                'twitter_oauth_token' => $requestToken['oauth_token'],
-                'twitter_oauth_token_secret' => $requestToken['oauth_token_secret']
-            ]);
-
-            $authUrl = $twitter->url('oauth/authorize', ['oauth_token' => $requestToken['oauth_token']]);
-
-            if ($useOob) {
-                return view('twitter.enter_pin', ['authUrl' => $authUrl]);
-            }
-
-            return redirect($authUrl);
-        } else {
-            session()->flash('error', 'Error connecting to Twitter.');
-
-            return redirect('/');
-        }
-    }
-
-    /**
-     * @deprecated
-     */
-    public function confirmKey(Request $request, TwitterOAuth $twitter)
-    {
-        $validatedInput = $request->validate([
-            'pin_number' => 'required|integer'
-        ]);
-
-        $pinNumber = $validatedInput['pin_number'];
-        $accessToken = $twitter->oauth('oauth/access_token', ['oauth_verifier' => $pinNumber]);
-        $resultCode = $twitter->getLastHttpCode();
-
-        if ($resultCode == 200) {
-            session(['twitter_access_token' => $accessToken]);
-
-            $this->clearSessionVars();
-
-            return redirect()->route('twitter.create');
-        } else {
-            session()->flash('error', 'Unable to verify Twitter credentials.');
-
-            return redirect('/');
-        }
-    }
-
-    /**
-     * @deprecated
-     */
-    public function callbackHandler(Request $request, TwitterOAuth $twitter)
-    {
-        if ($request->input('denied', false) || empty($request->input('oauth_verifier', null))) {
-            $this->clearSessionVars(true);
-            session()->flash('error', 'Twitter auth denied!');
-
-            return redirect('/');
-        }
-
-        $requestToken = $this->getSessionRequestToken();
-
-        if (empty($requestToken['twitter_oauth_token']) || $requestToken['twitter_oauth_token'] !== $request->input('twitter_oauth_token', '')) {
-            $this->clearSessionVars(true);
-            session()->flash('error', 'Incorrect OAuth token!');
-
-            return redirect('/');
-        }
-
-        $oauthVerifier = $request->input('oauth_verifier');
-        $accessToken = $twitter->oauth('oauth/access_token', ['oauth_verifier' => $oauthVerifier]);
-        $resultCode = $twitter->getLastHttpCode();
-
-        if ($resultCode == 200) {
-            session(['twitter_access_token' => $accessToken]);
-
-            $this->clearSessionVars();
-
-            return redirect('twitter.create');
-        } else {
-            session()->flash('error', 'Unable to verify Twitter credentials.');
-
-            return redirect('/');
-        }
-    }
-
-    public function test()
-    {
-        return view('twitter.test');
+        return view('twitter.index');
     }
 
     /**
@@ -140,6 +38,22 @@ class TwitterRequestController extends Controller
     /**
      *
      */
+    public function done(TwitterRequest $twitterRequest)
+    {
+        return view('twitter.done', ['twitterRequest' => $twitterRequest]);
+    }
+
+    /**
+     *
+     */
+    public function missingAuth()
+    {
+        return view('twitter.missingAuth');
+    }
+
+    /**
+     *
+     */
     public function vueCheck(Request $request)
     {
         $validatedData = $request->validate([
@@ -148,7 +62,10 @@ class TwitterRequestController extends Controller
 
         // TODO: Consider adding another route to the DB server that
         //       doesn't return the full result.
-        $guzzle = new GuzzleClient(['base_uri' => config('ew.ewdb.url')]);
+        $guzzle = new GuzzleClient([
+            'base_uri'    => config('ew.ewdb.url'),
+            'http_errors' => false,
+        ]);
         $response = $guzzle->request(
             'GET',
             '/api/twitter/has/' . $validatedData['twitter_user'],
@@ -172,11 +89,6 @@ class TwitterRequestController extends Controller
                 $redirectTo = route('twitter.result', ['id' => $recordId]);
             }
         }
-
-        /*
-        [1:59 PM] James Don: localhost:62020/api/AnalyzeTwitterAccount
-        [2:00 PM] James Don: Token, Name, RequesterName, Secret
-        */
 
         if (!$hasRecent) {
             if (!empty(session('twitter_oauth_token'))) {
@@ -212,7 +124,7 @@ class TwitterRequestController extends Controller
     /**
      *
      */
-    public function vueCheckPin()
+    public function vueCheckPin(Request $request)
     {
         $validatedInput = $request->validate([
             'twitter_user' => 'required|string|alpha_dash',
@@ -234,10 +146,10 @@ class TwitterRequestController extends Controller
         session(['twitter_access_token' => $accessToken]);
 
         $twitterRequest = TwitterRequest::make([
-            'twitter_username' => $validatedInput['twitter_user'],
-            'email' => $validatedInput['email'],
-            'request_ident' => session('twitter_request_ident'),
-            'access_token' => json_encode($accessToken),
+            'twitter_username'  => $validatedInput['twitter_user'],
+            'email'             => $validatedInput['email'],
+            'request_ident'     => session('twitter_request_ident'),
+            'access_token'      => json_encode($accessToken),
         ]);
 
         if (!$twitterRequest->save()) {
@@ -248,6 +160,8 @@ class TwitterRequestController extends Controller
 
         $this->clearSessionVars();
 
+        ForwardTwitterRequest::dispatch($twitterRequest);
+
         return response()->json([
             'redirectTo' => route('twitter.done', ['twitterRequest' => $twitterRequest]),
         ]);
@@ -256,61 +170,27 @@ class TwitterRequestController extends Controller
     /**
      *
      */
-    public function create()
-    {
-        return view('twitter.create');
-    }
-
-    /**
-     *
-     */
-    public function store(Request $request)
+    public function requestProcessed(Request $request)
     {
         $validatedInput = $request->validate([
-            'twitter_username' => 'required|string|alpha_dash',
-            'email' => 'required|string|email'
+            'request_id' => 'required|base64|min:10',
         ]);
 
-        $validatedInput['request_ident'] = session('twitter_request_ident');
-        $validatedInput['access_token'] = json_encode(session('twitter_access_token'));
+        if (empty($requestId = $validatedInput['request_id'])) {
+            return response()->json(['errors' => ['Missing request ID.']], 400);
+        }
 
-        // TODO: Verify "request_ident"
+        $requestInfo = explode(':', base64_decode($requestId));
 
-        $twitterRequest = TwitterRequest::create($validatedInput);
+        $twitterRequest = TwitterRequest::where('id', $requestInfo[0])
+                            ->where('request_ident', $requestInfo[1])
+                            ->where('twitter_username', $requestInfo[2])
+                            ->first();
 
-        $twitterRequest->save();
-
-        $this->clearSessionVars(true);
-
-        return redirect()->route('twitter.done', ['twitterRequest' => $twitterRequest]);
-    }
-
-    /**
-     *
-     */
-    public function done(TwitterRequest $twitterRequest)
-    {
-        return view('twitter.done', ['twitterRequest' => $twitterRequest]);
-    }
-
-    /**
-     *
-     */
-    public function missingAuth()
-    {
-        return view('twitter.missingAuth');
-    }
-
-    /**
-     *
-     */
-    private function getSessionRequestToken()
-    {
-        $request_token = [];
-        $request_token['twitter_oauth_token'] = session('twitter_oauth_token');
-        $request_token['twitter_oauth_token_secret'] = session('twitter_oauth_token_secret');
-
-        return $request_token;
+        // TODO: Create mail template
+        // TODO: Send mail to the user (queue?)
+        // TODO: Return success response to the server.
+        return response()->json($twitterRequest, 200);
     }
 
     /**

@@ -96,8 +96,7 @@
                 @endif
 
                 <div class="links">
-                    <a href="https://github.com/Crimix/EnragedWindigo">GitHub</a>
-                    <a href="{{ route('twitter.init') }}">Start request</a>
+                    <a href="{{ route('twitter.index') }}">Check Twitter user</a>
                 </div>
             </div>
         </div>

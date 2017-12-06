@@ -28,14 +28,9 @@ Route::post('password/reset', 'Auth\ForgotPasswordController@reset');
 
 Route::get('/home', 'HomeController@index')->name('home');
 
-Route::get('/twitter/init', 'TwitterRequestController@init')->name('twitter.init');
-Route::get('/twitter/callback', 'TwitterRequestController@callback')->name('twitter.callback');
-Route::post('/twitter/confirm_key', 'TwitterRequestController@confirmKey')->name('twitter.confirmKey');
-Route::get('/twitter/create', 'TwitterRequestController@create')->name('twitter.create');
-Route::post('/twitter/create', 'TwitterRequestController@store')->name('twitter.store');
+Route::get('/twitter', 'TwitterRequestController@index')->name('twitter.index');
 Route::get('/twitter/missing_auth', 'TwitterRequestController@missingAuth')->name('twitter.missingAuth');
 Route::post('/twitter/vue/check', 'TwitterRequestController@vueCheck');
 Route::post('/twitter/vue/check_pin', 'TwitterRequestController@vueCheckPin');
 Route::get('/twitter/show/{id}', 'TwitterRequestController@show')->name('twitter.result');
-Route::get('/twitter/test', 'TwitterRequestController@test');
 Route::get('/twitter/{twitterRequest}', 'TwitterRequestController@done')->name('twitter.done');

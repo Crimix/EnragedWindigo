@@ -114,6 +114,7 @@
         },
 
         pinForm: {
+          user: "",
           pin: "",
           email: "",
           errors: []
@@ -132,7 +133,7 @@
         })
         .then(response => {
           if (response.data.hasRecent) {
-            console.log('This would redirect to: ' + response.data.redirectTo);
+            window.location.href = response.data.redirectTo;
           } else {
             this.twitterLink = response.data.twitterLink;
             $('#modal-twitter-verification').modal('show');
@@ -159,8 +160,7 @@
           'email': this.pinForm.email
         })
         .then(response => {
-          console.log('This would redirect to: ' + response.data.redirectTo);
-          //window.location.href = response.data.redirectTo;
+          window.location.href = response.data.redirectTo;
         })
         .catch(error => {
           if (error.response) {

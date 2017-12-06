@@ -7,6 +7,6 @@ return [
     ],
 
     'queue' => [
-        'url' => env('EW_QUEUE_URL', ''),
+        'url' => env('EW_QUEUE_URL', 'http://localhost:62020'),
     ],
 ];
