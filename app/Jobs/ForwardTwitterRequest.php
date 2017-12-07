@@ -38,8 +38,7 @@ class ForwardTwitterRequest implements ShouldQueue
             return;
         }
 
-        $requestId   =
-            base64_encode($this->id . ':' . $this->request_ident . ':' . $this->twitter_username);
+        $requestId   = $this->twitterRequest->requestId;
         $accessToken = json_decode($this->twitterRequest->access_token, true);
         $guzzle      = new GuzzleClient([
             'base_uri'    => config('ew.queue.url'),

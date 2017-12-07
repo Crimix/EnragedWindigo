@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\TwitterRequest;
 use App\Jobs\ForwardTwitterRequest;
+use App\Mail\TwitterRequestProcessed;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Abraham\TwitterOAuth\TwitterOAuth;
 use Carbon\Carbon;
 use GuzzleHttp\Client as GuzzleClient;
@@ -187,10 +189,9 @@ class TwitterRequestController extends Controller
                             ->where('twitter_username', $requestInfo[2])
                             ->first();
 
-        // TODO: Create mail template
-        // TODO: Send mail to the user (queue?)
-        // TODO: Return success response to the server.
-        return response()->json($twitterRequest, 200);
+        Mail::to($twitterRequest->email)->send(new TwitterRequestProcessed($twitterRequest));
+
+        return response()->json('All done!', 200);
     }
 
     /**

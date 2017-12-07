@@ -15,6 +15,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/mailable', function () {
+    $twitterRequest = App\TwitterRequest::find(3);
+
+    return new App\Mail\TwitterRequestProcessed($twitterRequest);
+});
+
 // Authentication routes
 Route::get('/login', 'Auth\LoginController@showLoginForm')->name('login');
 Route::post('/login', 'Auth\LoginController@login');
