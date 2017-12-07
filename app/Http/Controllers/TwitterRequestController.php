@@ -101,7 +101,7 @@ class TwitterRequestController extends Controller
         $twitterLink = '';
 
         if ($response->getStatusCode() === 200) {
-            $recordId = intval($response->getBody());
+            $recordId = intval($response->getBody()->getContents());
 
             if ($recordId > 0) {
                 $hasRecent  = true;
