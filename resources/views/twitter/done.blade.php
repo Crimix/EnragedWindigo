@@ -2,7 +2,8 @@
 
 @section('content')
 <h1>Done!</h1>
-<pre>
-{{ print_r($twitterRequest, true) }}
-</pre>
+<p>
+  Assuming you have entered your email-address correctly, you will receive an
+  email when processing has completed.
+</p>
 @endsection

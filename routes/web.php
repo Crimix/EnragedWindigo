@@ -15,12 +15,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/mailable', function () {
-    $twitterRequest = App\TwitterRequest::find(3);
-
-    return new App\Mail\TwitterRequestProcessed($twitterRequest);
-});
-
 // Authentication routes
 Route::get('/login', 'Auth\LoginController@showLoginForm')->name('login');
 Route::post('/login', 'Auth\LoginController@login');
@@ -38,5 +32,5 @@ Route::get('/twitter', 'TwitterRequestController@index')->name('twitter.index');
 Route::get('/twitter/missing_auth', 'TwitterRequestController@missingAuth')->name('twitter.missingAuth');
 Route::post('/twitter/vue/check', 'TwitterRequestController@vueCheck');
 Route::post('/twitter/vue/check_pin', 'TwitterRequestController@vueCheckPin');
-Route::get('/twitter/show/{id}', 'TwitterRequestController@show')->name('twitter.result');
+Route::get('/twitter/show', 'TwitterRequestController@show')->name('twitter.result');
 Route::get('/twitter/{twitterRequest}', 'TwitterRequestController@done')->name('twitter.done');

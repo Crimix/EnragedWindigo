@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\TwitterRequest;
+use App\Http\Requests\RequestIdRequest;
 use App\Jobs\ForwardTwitterRequest;
 use App\Mail\TwitterRequestProcessed;
 use Illuminate\Http\Request;
@@ -32,9 +33,25 @@ class TwitterRequestController extends Controller
     /**
      *
      */
-    public function show($id)
+    public function show(RequestIdRequest $request)
     {
-        return view('twitter.show')->with(['twitterID' => $id]);
+        $requestId      = $request->input('request_id');
+        $twitterRequest = TwitterRequest::fromRequestId($requestId);
+
+        // TODO: Retrieve result from DB server
+        // TODO: Process into data sets
+        // TODO: Generate charts
+
+        return view('twitter.show')
+                ->with([
+                    'analysisChartScatter' => '',
+                    'analysisChartBar' => '',
+                    'miChartScatter' => '',
+                    'miChartBar' => '',
+                    'sentimentChartBar' => '',
+                    'mediaChartBar' => '',
+                    'twitterCount' => 0,
+                ]);
     }
 
     /**
@@ -172,22 +189,10 @@ class TwitterRequestController extends Controller
     /**
      *
      */
-    public function requestProcessed(Request $request)
+    public function requestProcessed(RequestIdRequest $request)
     {
-        $validatedInput = $request->validate([
-            'request_id' => 'required|base64|min:10',
-        ]);
-
-        if (empty($requestId = $validatedInput['request_id'])) {
-            return response()->json(['errors' => ['Missing request ID.']], 400);
-        }
-
-        $requestInfo = explode(':', base64_decode($requestId));
-
-        $twitterRequest = TwitterRequest::where('id', $requestInfo[0])
-                            ->where('request_ident', $requestInfo[1])
-                            ->where('twitter_username', $requestInfo[2])
-                            ->first();
+        $requestId      = $request->input('request_id');
+        $twitterRequest = TwitterRequest::fromRequestId($requestId);
 
         Mail::to($twitterRequest->email)->send(new TwitterRequestProcessed($twitterRequest));
 

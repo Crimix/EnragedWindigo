@@ -7,6 +7,7 @@
 
 require('./bootstrap');
 
+window.Chart = require('chart.js');
 window.Vue = require('vue');
 
 /**
