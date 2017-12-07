@@ -35,10 +35,52 @@ class TwitterRequestController extends Controller
      */
     public function show(RequestIdRequest $request)
     {
+        $result         = null;
         $requestId      = $request->input('request_id');
         $twitterRequest = TwitterRequest::fromRequestId($requestId);
 
-        // TODO: Retrieve result from DB server
+        // Retrieve result from DB server
+        $guzzle = new GuzzleClient([
+            'base_uri'    => config('ew.ewdb.url'),
+            'http_errors' => false,
+        ]);
+
+        $response = $guzzle->request(
+            'GET',
+            '/api/twitter/has/' . $validatedData['twitter_user'],
+            [
+                'headers' => [
+                    'Accept'        => 'application/json',
+                    'Authorization' => 'Bearer ' . config('ew.ewdb.token'),
+                ],
+            ]
+        );
+
+        if ($response->getStatusCode() === 200) {
+            $recordId = intval($response->getBody()->getContents());
+
+            if ($recordId > 0) {
+                $response = $guzzle->request(
+                    'GET',
+                    '/api/twitter/' . $recordId,
+                    [
+                        'headers' => [
+                            'Accept'        => 'application/json',
+                            'Authorization' => 'Bearer ' . config('ew.ewdb.token'),
+                        ],
+                    ]
+                );
+
+                if ($response->getStatusCode() === 200) {
+                    $result = json_decode($response->getBody()->getContents(), true);
+                }
+            }
+        }
+
+        if (empty($result)) {
+            return response('Erroneous request!', 404);
+        }
+
         // TODO: Process into data sets
         // TODO: Generate charts
 
@@ -79,8 +121,6 @@ class TwitterRequestController extends Controller
             'twitter_user' => 'required|string|alpha_dash',
         ]);
 
-        // TODO: Consider adding another route to the DB server that
-        //       doesn't return the full result.
         $guzzle = new GuzzleClient([
             'base_uri'    => config('ew.ewdb.url'),
             'http_errors' => false,
