@@ -50,6 +50,7 @@ class ForwardTwitterRequest implements ShouldQueue
             [
                 'form_params' => [
                     'Name'          => $this->twitterRequest->twitter_username,
+                    'RequesterName' => $accessToken['screen_name'],
                     'Token'         => $accessToken['oauth_token'],
                     'Secret'        => $accessToken['oauth_token_secret'],
                     'RequestID'     => $requestId,

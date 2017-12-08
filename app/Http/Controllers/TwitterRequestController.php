@@ -6,6 +6,7 @@ use App\TwitterRequest;
 use App\Http\Requests\RequestIdRequest;
 use App\Jobs\ForwardTwitterRequest;
 use App\Mail\TwitterRequestProcessed;
+use App\Services\DataProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Abraham\TwitterOAuth\TwitterOAuth;
@@ -33,7 +34,7 @@ class TwitterRequestController extends Controller
     /**
      *
      */
-    public function show(RequestIdRequest $request)
+    public function show(RequestIdRequest $request, DataProcessor $processor)
     {
         $result         = null;
         $requestId      = $request->input('request_id');
@@ -47,7 +48,7 @@ class TwitterRequestController extends Controller
 
         $response = $guzzle->request(
             'GET',
-            '/api/twitter/has/' . $validatedData['twitter_user'],
+            '/api/twitter/has/' . $twitterRequest->twitter_username,
             [
                 'headers' => [
                     'Accept'        => 'application/json',
@@ -78,21 +79,109 @@ class TwitterRequestController extends Controller
         }
 
         if (empty($result)) {
-            return response('Erroneous request!', 404);
+            return response('Request not found!', 404);
         }
 
-        // TODO: Process into data sets
-        // TODO: Generate charts
+        // Process into data sets
+        if (!$processor->prepareData($result)) {
+            return response('Error processing data!', 500);
+        }
+
+        $data = $processor->dataPoints;
+
+        /* ------------------
+         * Analysis - Scatter
+         * ------------------
+         */
+        $analysisScatter = app()->chartjs
+                                ->name('analysisScatter')
+                                ->type('scatter')
+                                ->size(['width' => 400, 'height' => 200])
+                                ->labels(['TestLabel'])
+                                ->datasets([
+                                    [
+                                        'label' => 'User',
+                                        'pointBorderColor' => 'rgba(38, 185, 154, 0.7)',
+                                        'pointBackgroundColor' => 'rgba(38, 185, 154, 0.7)',
+                                        'pointHoverBackgroundColor' => '#fff',
+                                        'pointHoverBorderColor' => 'rgba(220,220,220,1)',
+                                        'data' => $processor->convertTo2D($data['analysis']['user']),
+                                    ],
+                                    [
+                                        'label' => 'Left',
+                                        'pointBorderColor' => 'rgba(80, 80, 220, 0.7)',
+                                        'pointBackgroundColor' => 'rgba(80, 80, 220, 0.7)',
+                                        'pointHoverBackgroundColor' => '#fff',
+                                        'pointHoverBorderColor' => 'rgba(220,220,220,1)',
+                                        'data' => $processor->convertTo2D($data['analysis']['left']),
+                                    ],
+                                    [
+                                        'label' => 'Center',
+                                        'data' => $processor->convertTo2D($data['analysis']['center']),
+                                    ],
+                                    [
+                                        'label' => 'Right',
+                                        'pointBorderColor' => 'rgba(220, 80, 80, 0.7)',
+                                        'pointBackgroundColor' => 'rgba(220, 80, 80, 0.7)',
+                                        'pointHoverBackgroundColor' => '#fff',
+                                        'pointHoverBorderColor' => 'rgba(220,220,220,1)',
+                                        'data' => $processor->convertTo2D($data['analysis']['right']),
+                                    ],
+                                ])
+                                ->optionsRaw([
+                                    'legend' => [
+                                        'display' => false,
+                                    ],
+                                    'scales' => [
+                                        'xAxes' => [[
+                                            'ticks' => [
+                                                'min' => -10,
+                                                'max' => 10,
+                                            ],
+                                        ]],
+                                        'yAxes' => [[
+                                            'display' => false,
+                                        ]],
+                                    ],
+                                    'tooltips' => [
+                                        'mode' => 'point',
+                                    ],
+                                ]);
+
+        /* --------------
+         * Analysis - Bar
+         * --------------
+         */
+
+        /* ------------
+         * MI - Scatter
+         * ------------
+         */
+
+        /* --------
+         * MI - Bar
+         * --------
+         */
+
+        /* ---------------
+         * Sentiment - Bar
+         * ---------------
+         */
+
+        /* -----------
+         * Media - Bar
+         * -----------
+         */
 
         return view('twitter.show')
                 ->with([
-                    'analysisChartScatter' => '',
-                    'analysisChartBar' => '',
-                    'miChartScatter' => '',
-                    'miChartBar' => '',
-                    'sentimentChartBar' => '',
-                    'mediaChartBar' => '',
-                    'twitterCount' => 0,
+                    'analysisChartScatter'  => $analysisScatter,
+                    'analysisChartBar'      => '',
+                    'miChartScatter'        => '',
+                    'miChartBar'            => '',
+                    'sentimentChartBar'     => '',
+                    'mediaChartBar'         => '',
+                    'dataPoints'            => $data,
                 ]);
     }
 
