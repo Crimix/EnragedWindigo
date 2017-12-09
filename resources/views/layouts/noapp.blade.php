@@ -1,5 +1,5 @@
 @include('layouts.components.header')
-  <div id="app">
+  <div>
     @include('layouts.components.navbar')
     @yield('content')
   </div>
