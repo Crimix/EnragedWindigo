@@ -87,8 +87,6 @@ class TwitterRequestController extends Controller
             return response('Error processing data!', 500);
         }
 
-        $data = $processor->dataPoints;
-
         /* ------------------
          * Analysis - Scatter
          * ------------------
@@ -96,7 +94,7 @@ class TwitterRequestController extends Controller
         $analysisScatter = app()->chartjs
                                 ->name('analysisScatter')
                                 ->type('scatter')
-                                ->size(['width' => 400, 'height' => 200])
+                                ->size(['width' => 400, 'height' => 100])
                                 ->labels(['TestLabel'])
                                 ->datasets([
                                     [
@@ -105,7 +103,7 @@ class TwitterRequestController extends Controller
                                         'pointBackgroundColor' => 'rgba(38, 185, 154, 0.7)',
                                         'pointHoverBackgroundColor' => '#fff',
                                         'pointHoverBorderColor' => 'rgba(220,220,220,1)',
-                                        'data' => $processor->convertTo2D($data['analysis']['user']),
+                                        'data' => $processor->getScatterData('analysis', 'user'),
                                     ],
                                     [
                                         'label' => 'Left',
@@ -113,11 +111,11 @@ class TwitterRequestController extends Controller
                                         'pointBackgroundColor' => 'rgba(80, 80, 220, 0.7)',
                                         'pointHoverBackgroundColor' => '#fff',
                                         'pointHoverBorderColor' => 'rgba(220,220,220,1)',
-                                        'data' => $processor->convertTo2D($data['analysis']['left']),
+                                        'data' => $processor->getScatterData('analysis', 'left'),
                                     ],
                                     [
                                         'label' => 'Center',
-                                        'data' => $processor->convertTo2D($data['analysis']['center']),
+                                        'data' => $processor->getScatterData('analysis', 'center'),
                                     ],
                                     [
                                         'label' => 'Right',
@@ -125,7 +123,7 @@ class TwitterRequestController extends Controller
                                         'pointBackgroundColor' => 'rgba(220, 80, 80, 0.7)',
                                         'pointHoverBackgroundColor' => '#fff',
                                         'pointHoverBorderColor' => 'rgba(220,220,220,1)',
-                                        'data' => $processor->convertTo2D($data['analysis']['right']),
+                                        'data' => $processor->getScatterData('analysis', 'right'),
                                     ],
                                 ])
                                 ->optionsRaw([
@@ -152,6 +150,17 @@ class TwitterRequestController extends Controller
          * Analysis - Bar
          * --------------
          */
+        $analysisBar = app()->chartjs
+                            ->name('analysisBar')
+                            ->type('bar')
+                            ->size(['width' => 400, 'height' => 200])
+                            ->labels(['TestLabel1', 'TestLabel2'])
+                            ->datasets($processor->getChartJsBarData('analysis', 10))
+                            ->optionsRaw([
+                                'legend' => [
+                                    'display' => false,
+                                ],
+                            ]);
 
         /* ------------
          * MI - Scatter
@@ -181,7 +190,6 @@ class TwitterRequestController extends Controller
                     'miChartBar'            => '',
                     'sentimentChartBar'     => '',
                     'mediaChartBar'         => '',
-                    'dataPoints'            => $data,
                 ]);
     }
 
