@@ -23,11 +23,11 @@ class DataProcessor
             'right'   => [],
         ],
         'media' => [
-            'user'    => 0,
+            'user'    => [],
             'follows' => [],
         ],
         'sentiment' => [
-            'user'    => 0,
+            'user'    => [],
             'follows' => [],
         ],
         'tweetCounts' => [
@@ -54,8 +54,8 @@ class DataProcessor
 
         $this->dataPoints['analysis']['user'] = [$user['analysis']];
         $this->dataPoints['mi']['user'] = [$user['mi']];
-        $this->dataPoints['media']['user'] = $user['media'];
-        $this->dataPoints['sentiment']['user'] = $user['sentiment'];
+        $this->dataPoints['media']['user'] = [$user['media']];
+        $this->dataPoints['sentiment']['user'] = [$user['sentiment']];
         $this->dataPoints['tweetCounts']['user'] = $user['tweet_count'];
 
         foreach ($follows as $follow) {
@@ -95,7 +95,7 @@ class DataProcessor
             return [];
         }
 
-        $userVal  = $this->dataPoints[$dataArea]['user'];
+        $userVal  = $this->dataPoints[$dataArea]['user'][0];
         $data     = $this->dataPoints[$dataArea]['follows'];
         $dataSize = count($data);
         $interval = (self::MAX_VAL - self::MIN_VAL) / $bracketCount;
@@ -123,6 +123,45 @@ class DataProcessor
         return $result;
     }
 
+    public function getChartJsScatterData($dataArea)
+    {
+        $result = [
+            'labels' => ['Some Label'],
+            'datasets' => [
+                [
+                    'label' => 'User',
+                    'pointBorderColor' => 'rgba(38, 185, 154, 0.7)',
+                    'pointBackgroundColor' => 'rgba(38, 185, 154, 0.7)',
+                    'pointHoverBackgroundColor' => '#fff',
+                    'pointHoverBorderColor' => 'rgba(220,220,220,1)',
+                    'data' => $this->getScatterData($dataArea, 'user'),
+                ],
+                [
+                    'label' => 'Left',
+                    'pointBorderColor' => 'rgba(80, 80, 220, 0.7)',
+                    'pointBackgroundColor' => 'rgba(80, 80, 220, 0.7)',
+                    'pointHoverBackgroundColor' => '#fff',
+                    'pointHoverBorderColor' => 'rgba(220,220,220,1)',
+                    'data' => $this->getScatterData($dataArea, 'left'),
+                ],
+                [
+                    'label' => 'Center',
+                    'data' => $this->getScatterData($dataArea, 'center'),
+                ],
+                [
+                    'label' => 'Right',
+                    'pointBorderColor' => 'rgba(220, 80, 80, 0.7)',
+                    'pointBackgroundColor' => 'rgba(220, 80, 80, 0.7)',
+                    'pointHoverBackgroundColor' => '#fff',
+                    'pointHoverBorderColor' => 'rgba(220,220,220,1)',
+                    'data' => $this->getScatterData($dataArea, 'right'),
+                ],
+            ],
+        ];
+
+        return $result;
+    }
+
     /**
      * 
      */
@@ -134,11 +173,21 @@ class DataProcessor
             return [];
         }
 
-        $result = [];
+        $result = [
+            'labels' => [],
+            'dataset' => [
+                'label'           => 'This dataset',
+                'fill'            => true,
+                'borderWidth'     => 2,
+                'data'            => [],
+                'backgroundColor' => [],
+                'borderColor'     => [],
+            ],
+        ];
 
         foreach ($data as $i => $entry) {
             if ($entry['hasUser']) {
-                $colour = [38, 185, 154];
+                $colour = [38, 220, 38];
             } else {
                 $colour = [80, 80, 80];
 
@@ -151,15 +200,16 @@ class DataProcessor
                 }
             }
 
-            $result[$i] = [
-                'label' => 'Bracket #' . $i,
-                'pointBorderColor' => "rgba({$colour[0]}, {$colour[1]}, {$colour[2]}, 0.7)",
-                'pointBackgroundColor' => "rgba({$colour[0]}, {$colour[1]}, {$colour[2]}, 0.7)",
-                'pointHoverBackgroundColor' => '#fff',
-                'pointHoverBorderColor' => 'rgba(220,220,220,1)',
-                'data' => $entry['entries'],
-            ];
+            $result['labels'][$i]                   = sprintf('%01.2f - %01.2f', $entry['begin'], $entry['end']);
+            $result['dataset']['data'][]            = count($entry['entries']);
+            $result['dataset']['backgroundColor'][] = "rgba({$colour[0]}, {$colour[1]}, {$colour[2]}, 0.4)";
+            $result['dataset']['borderColor'][]     = "rgba({$colour[0]}, {$colour[1]}, {$colour[2]}, 0.8)";
         }
+
+        $result['datasets'] = [$result['dataset']];
+        unset($result['dataset']);
+
+        return $result;
     }
 
 
@@ -187,7 +237,7 @@ class DataProcessor
         foreach ($values as $value) {
             $result[] = [
                 'x' => $value,
-                'y' => (mt_rand(-100, 100) / 100),
+                'y' => (mt_rand(0, 100) / 100),
             ];
         }
 

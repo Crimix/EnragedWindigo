@@ -87,109 +87,129 @@ class TwitterRequestController extends Controller
             return response('Error processing data!', 500);
         }
 
+        /* --------------
+         * Common Options
+         * --------------
+         */
+        $barOptions = [
+            'legend' => [
+                'display' => false,
+            ],
+            'scales' => [
+                'yAxes' => [[
+                    'ticks' => [
+                        'beginAtZero' => true,
+                    ],
+                ]],
+            ],
+        ];
+
+        $scatterOptions = [
+            'legend' => [
+                'display' => false,
+            ],
+            'scales' => [
+                'xAxes' => [[
+                    'ticks' => [
+                        'min' => -10,
+                        'max' => 10,
+                    ],
+                ]],
+                'yAxes' => [[
+                    'display' => false,
+                ]],
+            ],
+            'tooltips' => [
+                'mode' => 'point',
+            ],
+        ];
+
         /* ------------------
          * Analysis - Scatter
          * ------------------
          */
+        $data = $processor->getChartJsScatterData('analysis');
         $analysisScatter = app()->chartjs
                                 ->name('analysisScatter')
                                 ->type('scatter')
-                                ->size(['width' => 400, 'height' => 100])
-                                ->labels(['TestLabel'])
-                                ->datasets([
-                                    [
-                                        'label' => 'User',
-                                        'pointBorderColor' => 'rgba(38, 185, 154, 0.7)',
-                                        'pointBackgroundColor' => 'rgba(38, 185, 154, 0.7)',
-                                        'pointHoverBackgroundColor' => '#fff',
-                                        'pointHoverBorderColor' => 'rgba(220,220,220,1)',
-                                        'data' => $processor->getScatterData('analysis', 'user'),
-                                    ],
-                                    [
-                                        'label' => 'Left',
-                                        'pointBorderColor' => 'rgba(80, 80, 220, 0.7)',
-                                        'pointBackgroundColor' => 'rgba(80, 80, 220, 0.7)',
-                                        'pointHoverBackgroundColor' => '#fff',
-                                        'pointHoverBorderColor' => 'rgba(220,220,220,1)',
-                                        'data' => $processor->getScatterData('analysis', 'left'),
-                                    ],
-                                    [
-                                        'label' => 'Center',
-                                        'data' => $processor->getScatterData('analysis', 'center'),
-                                    ],
-                                    [
-                                        'label' => 'Right',
-                                        'pointBorderColor' => 'rgba(220, 80, 80, 0.7)',
-                                        'pointBackgroundColor' => 'rgba(220, 80, 80, 0.7)',
-                                        'pointHoverBackgroundColor' => '#fff',
-                                        'pointHoverBorderColor' => 'rgba(220,220,220,1)',
-                                        'data' => $processor->getScatterData('analysis', 'right'),
-                                    ],
-                                ])
-                                ->optionsRaw([
-                                    'legend' => [
-                                        'display' => false,
-                                    ],
-                                    'scales' => [
-                                        'xAxes' => [[
-                                            'ticks' => [
-                                                'min' => -10,
-                                                'max' => 10,
-                                            ],
-                                        ]],
-                                        'yAxes' => [[
-                                            'display' => false,
-                                        ]],
-                                    ],
-                                    'tooltips' => [
-                                        'mode' => 'point',
-                                    ],
-                                ]);
+                                ->size(['width' => 400, 'height' => 150])
+                                ->labels($data['labels'])
+                                ->datasets($data['datasets'])
+                                ->optionsRaw($scatterOptions);
 
         /* --------------
          * Analysis - Bar
          * --------------
          */
+        $data = $processor->getChartJsBarData('analysis', 10);
         $analysisBar = app()->chartjs
                             ->name('analysisBar')
                             ->type('bar')
-                            ->size(['width' => 400, 'height' => 200])
-                            ->labels(['TestLabel1', 'TestLabel2'])
-                            ->datasets($processor->getChartJsBarData('analysis', 10))
-                            ->optionsRaw([
-                                'legend' => [
-                                    'display' => false,
-                                ],
-                            ]);
+                            ->size(['width' => 400, 'height' => 150])
+                            ->labels($data['labels'])
+                            ->datasets($data['datasets'])
+                            ->optionsRaw($barOptions);
 
         /* ------------
          * MI - Scatter
          * ------------
          */
+        $data = $processor->getChartJsScatterData('mi');
+        $miScatter = app()->chartjs
+                            ->name('miScatter')
+                            ->type('scatter')
+                            ->size(['width' => 400, 'height' => 150])
+                            ->labels($data['labels'])
+                            ->datasets($data['datasets'])
+                            ->optionsRaw($scatterOptions);
 
         /* --------
          * MI - Bar
          * --------
          */
+        $data = $processor->getChartJsBarData('mi', 10);
+        $miBar = app()->chartjs
+                        ->name('miBar')
+                        ->type('bar')
+                        ->size(['width' => 400, 'height' => 150])
+                        ->labels($data['labels'])
+                        ->datasets($data['datasets'])
+                        ->optionsRaw($barOptions);
 
         /* ---------------
          * Sentiment - Bar
          * ---------------
          */
+        $data = $processor->getChartJsBarData('sentiment', 10);
+        $sentimentBar = app()->chartjs
+                                ->name('sentimentBar')
+                                ->type('bar')
+                                ->size(['width' => 400, 'height' => 150])
+                                ->labels($data['labels'])
+                                ->datasets($data['datasets'])
+                                ->optionsRaw($barOptions);
 
         /* -----------
          * Media - Bar
          * -----------
          */
+        $data = $processor->getChartJsBarData('media', 10);
+        $mediaBar = app()->chartjs
+                            ->name('mediaBar')
+                            ->type('bar')
+                            ->size(['width' => 400, 'height' => 150])
+                            ->labels($data['labels'])
+                            ->datasets($data['datasets'])
+                            ->optionsRaw($barOptions);
 
         return view('twitter.show')
                 ->with([
                     'analysisChartScatter'  => $analysisScatter,
-                    'analysisChartBar'      => '',
-                    'miChartScatter'        => '',
-                    'miChartBar'            => '',
-                    'sentimentChartBar'     => '',
-                    'mediaChartBar'         => '',
+                    'analysisChartBar'      => $analysisBar,
+                    'miChartScatter'        => $miScatter,
+                    'miChartBar'            => $miBar,
+                    'sentimentChartBar'     => $sentimentBar,
+                    'mediaChartBar'         => $mediaBar,
                 ]);
     }
 
