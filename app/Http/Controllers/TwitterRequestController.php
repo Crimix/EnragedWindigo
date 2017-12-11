@@ -207,33 +207,6 @@ class TwitterRequestController extends Controller
                                 )
                             );
 
-        /* ------------
-         * MI - Scatter
-         * ------------
-         */
-        $data = $processor->getChartJsScatterData('mi');
-        $miScatter = app()->chartjs
-                            ->name('miScatter')
-                            ->type('scatter')
-                            ->size($chartSize)
-                            ->labels($data['labels'])
-                            ->datasets($data['datasets'])
-                            ->optionsRaw(
-                                array_merge(
-                                    $scatterOptions,
-                                    [
-                                        'title' => [
-                                            'display'   => true,
-                                            'fontSize'  => $titleFontSize,
-                                            'text'      => [
-                                                'Bias and Sentiment Distribution',
-                                                '(MI)'
-                                            ],
-                                        ]
-                                    ]
-                                )
-                            );
-
         /* --------
          * MI - Bar
          * --------
@@ -311,9 +284,9 @@ class TwitterRequestController extends Controller
 
         return view('twitter.show')
                 ->with([
+                    'twitterName'           => $twitterName,
                     'analysisChartScatter'  => $analysisScatter,
                     'analysisChartBar'      => $analysisBar,
-                    'miChartScatter'        => $miScatter,
                     'miChartBar'            => $miBar,
                     'sentimentChartBar'     => $sentimentBar,
                     'mediaChartBar'         => $mediaBar,
