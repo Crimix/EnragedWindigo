@@ -17,7 +17,8 @@ class CreateTwitterRequestsTable extends Migration
             $table->increments('id');
             $table->string('email');
             $table->string('request_ident')->unique();
-            $table->string('twitter_username', 50);  // Limit is 16 chars, but might as well make it 50 in DB
+            // NOTE: Limit is 16 chars, but might as well make it 50 in DB
+            $table->string('twitter_username', 50);
             $table->string('access_token');
             $table->timestamps();
 
