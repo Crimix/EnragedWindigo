@@ -40,7 +40,7 @@ class DataProcessor
     ];
 
     /**
-     * 
+     *
      */
     public function prepareData($dataArray)
     {
@@ -70,12 +70,12 @@ class DataProcessor
         sort($this->dataPoints['mi']['follows']);
         sort($this->dataPoints['media']['follows']);
         sort($this->dataPoints['sentiment']['follows']);
-        
+
         return true;
     }
 
     /**
-     * 
+     *
      */
     public function getScatterData($dataArea, $subArea)
     {
@@ -87,7 +87,7 @@ class DataProcessor
     }
 
     /**
-     * 
+     *
      */
     public function getBarData($dataArea, $bracketCount = 10)
     {
@@ -134,7 +134,12 @@ class DataProcessor
                     'pointBackgroundColor' => 'rgba(38, 185, 154, 0.7)',
                     'pointHoverBackgroundColor' => '#fff',
                     'pointHoverBorderColor' => 'rgba(220,220,220,1)',
-                    'data' => $this->getScatterData($dataArea, 'user'),
+                    'data' => [
+                        [
+                            'x' => $this->dataPoints[$dataArea]['user'][0],
+                            'y' => $this->dataPoints['sentiment']['user'][0],
+                        ],
+                    ],
                 ],
                 [
                     'label' => 'Left',
@@ -163,7 +168,7 @@ class DataProcessor
     }
 
     /**
-     * 
+     *
      */
     public function getChartJsBarData($dataArea, $bracketCount = 10)
     {
@@ -214,21 +219,21 @@ class DataProcessor
 
 
     /**
-     * 
+     *
      */
     private function validateAreas($dataArea, $subArea) {
         return ($this->validateArea($dataArea) && is_array($this->dataPoints[$dataArea][$subArea]));
     }
 
     /**
-     * 
+     *
      */
     private function validateArea($dataArea) {
         return (is_array($this->dataPoints[$dataArea]));
     }
-    
+
     /**
-     * 
+     *
      */
     private function convertTo2D($values)
     {
@@ -236,8 +241,8 @@ class DataProcessor
 
         foreach ($values as $value) {
             $result[] = [
-                'x' => $value,
-                'y' => (mt_rand(0, 100) / 100),
+                'x' => $value[0],
+                'y' => $value[1],
             ];
         }
 
@@ -245,31 +250,34 @@ class DataProcessor
     }
 
     /**
-     * 
+     *
      */
-    private function addDataValue($value, $listName)
+    private function addDataValue($value, $listName, $sentiment)
     {
-        $this->dataPoints[$listName]['follows'][] = $value;
+        $pos = 'center';
 
         if ($value < -1) {
-            $this->dataPoints[$listName]['left'][] = $value;
+            $pos = 'left';
         } elseif ($value > 1) {
-            $this->dataPoints[$listName]['right'][] = $value;
-        } else {
-            $this->dataPoints[$listName]['center'][] = $value;
+            $pos = 'right';
         }
-    }
+
+        $this->dataPoints[$listName]['follows'][]       = $value;
+        $this->dataPoints[$listName][$pos][]            = [$value, $sentiment];
+}
 
     /**
-     * 
+     *
      */
     private function addDataValues($values)
     {
-        $this->addDataValue($values['analysis'], 'analysis');
-        $this->addDataValue($values['mi'], 'mi');
+        $sentiment = $values['sentiment'];
+
+        $this->addDataValue($values['analysis'], 'analysis', $sentiment);
+        $this->addDataValue($values['mi'], 'mi', $sentiment);
 
         $this->dataPoints['media']['follows'][]              =  $values['media'];
-        $this->dataPoints['sentiment']['follows'][]          =  $values['sentiment'];
+        $this->dataPoints['sentiment']['follows'][]          =  $sentiment;
         $this->dataPoints['tweetCounts']['follows']['total'] += $values['tweet_count'];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Validator;
 use App\TwitterRequest;
 use App\Http\Requests\RequestIdRequest;
 use App\Jobs\ForwardTwitterRequest;
@@ -34,51 +35,66 @@ class TwitterRequestController extends Controller
     /**
      *
      */
-    public function show(RequestIdRequest $request, DataProcessor $processor)
+    public function show(Request $request, DataProcessor $processor)
     {
+        $validator = Validator::make($request->all(), [
+            'request_id'    => 'required_without:record_id|base64|min:10',
+            'record_id'     => 'required_without:request_id|integer|min:1',
+            'twitter_user'  => 'required_with:record_id|string|alpha_dash|max:20',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect('/')->withErrors($validator);
+        }
+
         $result         = null;
         $requestId      = $request->input('request_id');
-        $twitterRequest = TwitterRequest::fromRequestId($requestId);
-
-        // Retrieve result from DB server
-        $guzzle = new GuzzleClient([
+        $recordId       = $request->input('record_id');
+        $twitterName    = $request->input('twitter_user');
+        $guzzle         = new GuzzleClient([
             'base_uri'    => config('ew.ewdb.url'),
             'http_errors' => false,
         ]);
 
-        $response = $guzzle->request(
-            'GET',
-            '/api/twitter/has/' . $twitterRequest->twitter_username,
-            [
-                'headers' => [
-                    'Accept'        => 'application/json',
-                    'Authorization' => 'Bearer ' . config('ew.ewdb.token'),
-                ],
-            ]
-        );
+        if (!empty($requestId)) {
+            $twitterRequest = TwitterRequest::fromRequestId($requestId);
 
-        if ($response->getStatusCode() === 200) {
-            $recordId = intval($response->getBody()->getContents());
+            // Retrieve record ID from DB server
+            $response = $guzzle->request(
+                'GET',
+                '/api/twitter/has/' . $twitterRequest->twitter_username,
+                [
+                    'headers' => [
+                        'Accept'        => 'application/json',
+                        'Authorization' => 'Bearer ' . config('ew.ewdb.token'),
+                    ],
+                ]
+            );
 
-            if ($recordId > 0) {
-                $response = $guzzle->request(
-                    'GET',
-                    '/api/twitter/' . $recordId,
-                    [
-                        'headers' => [
-                            'Accept'        => 'application/json',
-                            'Authorization' => 'Bearer ' . config('ew.ewdb.token'),
-                        ],
-                    ]
-                );
-
-                if ($response->getStatusCode() === 200) {
-                    $result = json_decode($response->getBody()->getContents(), true);
-                }
+            if ($response->getStatusCode() === 200) {
+                $recordId    = intval($response->getBody()->getContents());
+                $twitterName = $twitterRequest->twitter_username;
             }
         }
 
-        if (empty($result)) {
+        if (!empty($recordId) && $recordId > 0) {
+            $response = $guzzle->request(
+                'GET',
+                '/api/twitter/' . $recordId,
+                [
+                    'headers' => [
+                        'Accept'        => 'application/json',
+                        'Authorization' => 'Bearer ' . config('ew.ewdb.token'),
+                    ],
+                ]
+            );
+
+            if ($response->getStatusCode() === 200) {
+                $result = json_decode($response->getBody()->getContents(), true);
+            }
+        }
+
+        if (empty($result) || ($twitterName != $result['user']['twitter_name'])) {
             return response('Request not found!', 404);
         }
 
@@ -91,6 +107,9 @@ class TwitterRequestController extends Controller
          * Common Options
          * --------------
          */
+        $titleFontSize  = 16;
+        $chartSize      = ['width' => 400, 'height' => 250];
+
         $barOptions = [
             'legend' => [
                 'display' => false,
@@ -101,6 +120,9 @@ class TwitterRequestController extends Controller
                         'beginAtZero' => true,
                     ],
                 ]],
+                'xAxes' => [[
+                    'categoryPercentage' => 1.0,
+                ]],
             ],
         ];
 
@@ -110,13 +132,20 @@ class TwitterRequestController extends Controller
             ],
             'scales' => [
                 'xAxes' => [[
+                    'scaleLabel' => [
+                        'display' => true,
+                        'labelString' => 'Political',
+                    ],
                     'ticks' => [
                         'min' => -10,
                         'max' => 10,
                     ],
                 ]],
                 'yAxes' => [[
-                    'display' => false,
+                    'scaleLabel' => [
+                        'display' => true,
+                        'labelString' => 'Sentiment',
+                    ],
                 ]],
             ],
             'tooltips' => [
@@ -132,10 +161,24 @@ class TwitterRequestController extends Controller
         $analysisScatter = app()->chartjs
                                 ->name('analysisScatter')
                                 ->type('scatter')
-                                ->size(['width' => 400, 'height' => 150])
+                                ->size($chartSize)
                                 ->labels($data['labels'])
                                 ->datasets($data['datasets'])
-                                ->optionsRaw($scatterOptions);
+                                ->optionsRaw(
+                                    array_merge(
+                                        $scatterOptions,
+                                        [
+                                            'title' => [
+                                                'display'   => true,
+                                                'fontSize'  => $titleFontSize,
+                                                'text'      => [
+                                                    'Bias and Sentiment Distribution',
+                                                    '(Analysis)'
+                                                ],
+                                            ]
+                                        ]
+                                    )
+                                );
 
         /* --------------
          * Analysis - Bar
@@ -145,10 +188,24 @@ class TwitterRequestController extends Controller
         $analysisBar = app()->chartjs
                             ->name('analysisBar')
                             ->type('bar')
-                            ->size(['width' => 400, 'height' => 150])
+                            ->size($chartSize)
                             ->labels($data['labels'])
                             ->datasets($data['datasets'])
-                            ->optionsRaw($barOptions);
+                            ->optionsRaw(
+                                array_merge(
+                                    $barOptions,
+                                    [
+                                        'title' => [
+                                            'display'   => true,
+                                            'fontSize'  => $titleFontSize,
+                                            'text'      => [
+                                                'Bias Distribution',
+                                                '(Analysis)'
+                                            ],
+                                        ]
+                                    ]
+                                )
+                            );
 
         /* ------------
          * MI - Scatter
@@ -158,10 +215,24 @@ class TwitterRequestController extends Controller
         $miScatter = app()->chartjs
                             ->name('miScatter')
                             ->type('scatter')
-                            ->size(['width' => 400, 'height' => 150])
+                            ->size($chartSize)
                             ->labels($data['labels'])
                             ->datasets($data['datasets'])
-                            ->optionsRaw($scatterOptions);
+                            ->optionsRaw(
+                                array_merge(
+                                    $scatterOptions,
+                                    [
+                                        'title' => [
+                                            'display'   => true,
+                                            'fontSize'  => $titleFontSize,
+                                            'text'      => [
+                                                'Bias and Sentiment Distribution',
+                                                '(MI)'
+                                            ],
+                                        ]
+                                    ]
+                                )
+                            );
 
         /* --------
          * MI - Bar
@@ -171,10 +242,24 @@ class TwitterRequestController extends Controller
         $miBar = app()->chartjs
                         ->name('miBar')
                         ->type('bar')
-                        ->size(['width' => 400, 'height' => 150])
+                        ->size($chartSize)
                         ->labels($data['labels'])
                         ->datasets($data['datasets'])
-                        ->optionsRaw($barOptions);
+                        ->optionsRaw(
+                            array_merge(
+                                $barOptions,
+                                [
+                                    'title' => [
+                                        'display'   => true,
+                                        'fontSize'  => $titleFontSize,
+                                        'text'      => [
+                                            'Bias Distribution',
+                                            '(MI)'
+                                        ],
+                                    ]
+                                ]
+                            )
+                        );
 
         /* ---------------
          * Sentiment - Bar
@@ -184,10 +269,21 @@ class TwitterRequestController extends Controller
         $sentimentBar = app()->chartjs
                                 ->name('sentimentBar')
                                 ->type('bar')
-                                ->size(['width' => 400, 'height' => 150])
+                                ->size($chartSize)
                                 ->labels($data['labels'])
                                 ->datasets($data['datasets'])
-                                ->optionsRaw($barOptions);
+                                ->optionsRaw(
+                                    array_merge(
+                                        $barOptions,
+                                        [
+                                            'title' => [
+                                                'display' => true,
+                                                'fontSize'  => $titleFontSize,
+                                                'text' => 'Sentiment Distribution',
+                                            ]
+                                        ]
+                                    )
+                                );
 
         /* -----------
          * Media - Bar
@@ -197,10 +293,21 @@ class TwitterRequestController extends Controller
         $mediaBar = app()->chartjs
                             ->name('mediaBar')
                             ->type('bar')
-                            ->size(['width' => 400, 'height' => 150])
+                            ->size($chartSize)
                             ->labels($data['labels'])
                             ->datasets($data['datasets'])
-                            ->optionsRaw($barOptions);
+                            ->optionsRaw(
+                                array_merge(
+                                    $barOptions,
+                                    [
+                                        'title' => [
+                                            'display' => true,
+                                            'fontSize'  => $titleFontSize,
+                                            'text' => 'Media Bias Distribution',
+                                        ]
+                                    ]
+                                )
+                            );
 
         return view('twitter.show')
                 ->with([
@@ -235,7 +342,7 @@ class TwitterRequestController extends Controller
     public function vueCheck(Request $request)
     {
         $validatedData = $request->validate([
-            'twitter_user' => 'required|string|alpha_dash',
+            'twitter_user' => 'required|string|alpha_dash|max:20',
         ]);
 
         $guzzle = new GuzzleClient([
@@ -262,7 +369,10 @@ class TwitterRequestController extends Controller
 
             if ($recordId > 0) {
                 $hasRecent  = true;
-                $redirectTo = route('twitter.result', ['id' => $recordId]);
+                $redirectTo = route('twitter.result', [
+                    'record_id' => $recordId,
+                    'twitter_user' => $validatedData['twitter_user']
+                ]);
             }
         }
 
@@ -303,7 +413,7 @@ class TwitterRequestController extends Controller
     public function vueCheckPin(Request $request)
     {
         $validatedInput = $request->validate([
-            'twitter_user' => 'required|string|alpha_dash',
+            'twitter_user' => 'required|string|alpha_dash|max:20',
             'pin_number'   => 'required|integer',
             'email'        => 'required|email',
         ]);
