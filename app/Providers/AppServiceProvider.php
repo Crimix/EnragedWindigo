@@ -39,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
 
             if (!empty($userToken) && !empty($userTokenSecret)) {
                 return new TwitterOAuth($consumerKey, $consumerSecret,
-                                        $userToken, $userToken);
+                                        $userToken, $userTokenSecret);
             } else {
                 return new TwitterOAuth($consumerKey, $consumerSecret);
             }

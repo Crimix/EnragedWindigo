@@ -108,7 +108,7 @@ class TwitterRequestController extends Controller
          * --------------
          */
         $titleFontSize  = 16;
-        $chartSize      = ['width' => 400, 'height' => 250];
+        $chartSize      = ['width' => 400, 'height' => 200];
 
         $barOptions = [
             'legend' => [
@@ -116,6 +116,10 @@ class TwitterRequestController extends Controller
             ],
             'scales' => [
                 'yAxes' => [[
+                    'scaleLabel' => [
+                        'display' => true,
+                        'labelString' => 'Percentage',
+                    ],
                     'ticks' => [
                         'beginAtZero' => true,
                     ],
@@ -146,6 +150,10 @@ class TwitterRequestController extends Controller
                         'display' => true,
                         'labelString' => 'Sentiment',
                     ],
+                    'ticks' => [
+                        'min' => -10,
+                        'max' => 10,
+                    ],
                 ]],
             ],
             'tooltips' => [
@@ -164,21 +172,7 @@ class TwitterRequestController extends Controller
                                 ->size($chartSize)
                                 ->labels($data['labels'])
                                 ->datasets($data['datasets'])
-                                ->optionsRaw(
-                                    array_merge(
-                                        $scatterOptions,
-                                        [
-                                            'title' => [
-                                                'display'   => true,
-                                                'fontSize'  => $titleFontSize,
-                                                'text'      => [
-                                                    'Bias and Sentiment Distribution',
-                                                    '(Analysis)'
-                                                ],
-                                            ]
-                                        ]
-                                    )
-                                );
+                                ->optionsRaw($scatterOptions);
 
         /* --------------
          * Analysis - Bar
@@ -191,21 +185,7 @@ class TwitterRequestController extends Controller
                             ->size($chartSize)
                             ->labels($data['labels'])
                             ->datasets($data['datasets'])
-                            ->optionsRaw(
-                                array_merge(
-                                    $barOptions,
-                                    [
-                                        'title' => [
-                                            'display'   => true,
-                                            'fontSize'  => $titleFontSize,
-                                            'text'      => [
-                                                'Bias Distribution',
-                                                '(Analysis)'
-                                            ],
-                                        ]
-                                    ]
-                                )
-                            );
+                            ->optionsRaw($barOptions);
 
         /* --------
          * MI - Bar
@@ -218,21 +198,7 @@ class TwitterRequestController extends Controller
                         ->size($chartSize)
                         ->labels($data['labels'])
                         ->datasets($data['datasets'])
-                        ->optionsRaw(
-                            array_merge(
-                                $barOptions,
-                                [
-                                    'title' => [
-                                        'display'   => true,
-                                        'fontSize'  => $titleFontSize,
-                                        'text'      => [
-                                            'Bias Distribution',
-                                            '(MI)'
-                                        ],
-                                    ]
-                                ]
-                            )
-                        );
+                        ->optionsRaw($barOptions);
 
         /* ---------------
          * Sentiment - Bar
@@ -245,18 +211,7 @@ class TwitterRequestController extends Controller
                                 ->size($chartSize)
                                 ->labels($data['labels'])
                                 ->datasets($data['datasets'])
-                                ->optionsRaw(
-                                    array_merge(
-                                        $barOptions,
-                                        [
-                                            'title' => [
-                                                'display' => true,
-                                                'fontSize'  => $titleFontSize,
-                                                'text' => 'Sentiment Distribution',
-                                            ]
-                                        ]
-                                    )
-                                );
+                                ->optionsRaw($barOptions);
 
         /* -----------
          * Media - Bar
@@ -269,22 +224,13 @@ class TwitterRequestController extends Controller
                             ->size($chartSize)
                             ->labels($data['labels'])
                             ->datasets($data['datasets'])
-                            ->optionsRaw(
-                                array_merge(
-                                    $barOptions,
-                                    [
-                                        'title' => [
-                                            'display' => true,
-                                            'fontSize'  => $titleFontSize,
-                                            'text' => 'Media Bias Distribution',
-                                        ]
-                                    ]
-                                )
-                            );
+                            ->optionsRaw($barOptions);
 
         return view('twitter.show')
                 ->with([
                     'twitterName'           => $twitterName,
+                    'userCount'             => $processor->getUserCount(),
+                    'tweetCounts'           => $processor->getTweetCounts(),
                     'analysisChartScatter'  => $analysisScatter,
                     'analysisChartBar'      => $analysisBar,
                     'miChartBar'            => $miBar,

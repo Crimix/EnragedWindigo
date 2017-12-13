@@ -28,8 +28,14 @@
               <input id="twitter-user-name" class="form-control" name="user" v-model="form.user">
             </div>
             <div class="form-group">
-              <button type="button" class="btn btn-primary form-control" @click="checkUser">Check user</button>
+              <button type="button" class="btn btn-primary form-control" @click="checkUser" :disabled="form.isProcessing" v-if="!form.isRedirecting">
+                Check user
+              </button>
+              <h2 v-if="form.isRedirecting">
+                Redirecting to result. Please wait...
+              </h2>
             </div>
+            <vue-simple-spinner message="Please wait..." v-if="form.isProcessing"></vue-simple-spinner>
           </form>
         </div>
       </div>
@@ -109,6 +115,8 @@
         twitterLink: "",
 
         form: {
+          isProcessing: false,
+          isRedirecting: false,
           user: "",
           errors: []
         },
@@ -128,11 +136,16 @@
       checkUser() {
         this.form.errors = [];
 
+        this.form.isProcessing = true;
+
         axios.post('/twitter/vue/check', {
           twitter_user: this.form.user
         })
         .then(response => {
+          this.form.isProcessing = false;
+
           if (response.data.hasRecent) {
+            this.form.isRedirecting = true;
             window.location.href = response.data.redirectTo;
           } else {
             this.twitterLink = response.data.twitterLink;
@@ -140,6 +153,8 @@
           }
         })
         .catch(error => {
+          this.form.isProcessing = false;
+
           if (error.response) {
             this.unpackErrorList(error.response.data, this.form);
 
