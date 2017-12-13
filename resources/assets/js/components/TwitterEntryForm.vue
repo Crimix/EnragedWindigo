@@ -8,9 +8,6 @@
   <div>
     <div v-bind:class="{ container: !isContained }">
       <div class="panel panel-default">
-        <div class="panel-heading">
-          <span>Check Twitter user</span>
-        </div>
         <div class="panel-body">
           <div class="alert alert-danger" v-if="form.errors.length > 0">
             <p><strong>Whoops!</strong> Something went wrong!</p>

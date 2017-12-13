@@ -87,6 +87,12 @@
                 <div class="title m-b-md">
                     Enraged Windigo
                 </div>
+				
+				Hey
+				
+				<div id="app">
+					<twitter-entry-form></twitter-entry-form>
+				</div>
 
                 @if (session('error'))
                 <div class="alert alert-danger alert-dismissable">
@@ -95,9 +101,9 @@
                 </div>
                 @endif
 
-                <div class="links">
+                <!--<div class="links">
                     <a href="{{ route('twitter.index') }}">Check Twitter user</a>
-                </div>
+                </div> -->
             </div>
         </div>
 
