@@ -16,6 +16,8 @@ window.Vue = require('vue');
  * or customize the JavaScript scaffolding to fit your unique needs.
  */
 
+Vue.component('vue-simple-spinner', require('vue-simple-spinner'));
+
 Vue.component('example-component', require('./components/ExampleComponent.vue'));
 Vue.component('twitter-entry-form', require('./components/TwitterEntryForm.vue'));
 

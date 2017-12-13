@@ -32,11 +32,13 @@ class DataProcessor
         ],
         'tweetCounts' => [
             'user'    => 0,
+            'total'   => 0,
             'follows' => [
                 'total'   => 0,
                 'average' => 0,
             ],
         ],
+        'userCount' => 0,
     ];
 
     /**
@@ -57,12 +59,14 @@ class DataProcessor
         $this->dataPoints['media']['user'] = [$user['media']];
         $this->dataPoints['sentiment']['user'] = [$user['sentiment']];
         $this->dataPoints['tweetCounts']['user'] = $user['tweet_count'];
+        $this->dataPoints['userCount'] = $followCount + 1;
 
         foreach ($follows as $follow) {
             $this->addDataValues($follow);
         }
 
         $totalTweets = $this->dataPoints['tweetCounts']['follows']['total'];
+        $this->dataPoints['tweetCounts']['total'] = $totalTweets + $user['tweet_count'];
         $this->dataPoints['tweetCounts']['follows']['average'] = floor($totalTweets / $followCount);
 
         // Sort some of the arrays
@@ -72,6 +76,22 @@ class DataProcessor
         sort($this->dataPoints['sentiment']['follows']);
 
         return true;
+    }
+
+    /**
+     *
+     */
+    public function getTweetCounts()
+    {
+        return $this->dataPoints['tweetCounts'];
+    }
+
+    /**
+     *
+     */
+    public function getUserCount()
+    {
+        return $this->dataPoints['userCount'];
     }
 
     /**
@@ -173,6 +193,7 @@ class DataProcessor
     public function getChartJsBarData($dataArea, $bracketCount = 10)
     {
         $data = $this->getBarData($dataArea, $bracketCount);
+        $totalEntries = $this->dataPoints['userCount'];
 
         if (count($data) < 1) {
             return [];
@@ -198,17 +219,17 @@ class DataProcessor
 
                 if ($entry['end'] < -1) {
                     $multp = (($entry['begin'] + $entry['end']) / 2) / self::MIN_VAL;
-                    $colour = [floor(60 * $multp), floor(60 * $multp), floor(220 * $multp)];
+                    $colour = [floor(60 * $multp), floor(59 * $multp), floor(110 * $multp)];
                 } elseif ($entry['begin'] > 1) {
                     $multp = (($entry['begin'] + $entry['end']) / 2) / self::MAX_VAL;
-                    $colour = [floor(220 * $multp), floor(60 * $multp), floor(60 * $multp)];
+                    $colour = [floor(178 * $multp), floor(34 * $multp), floor(52 * $multp)];
                 }
             }
 
             $result['labels'][$i]                   = sprintf('%01.2f - %01.2f', $entry['begin'], $entry['end']);
-            $result['dataset']['data'][]            = count($entry['entries']);
-            $result['dataset']['backgroundColor'][] = "rgba({$colour[0]}, {$colour[1]}, {$colour[2]}, 0.4)";
-            $result['dataset']['borderColor'][]     = "rgba({$colour[0]}, {$colour[1]}, {$colour[2]}, 0.8)";
+            $result['dataset']['data'][]            = round((count($entry['entries']) / $totalEntries) * 100, 0);
+            $result['dataset']['backgroundColor'][] = "rgba({$colour[0]}, {$colour[1]}, {$colour[2]}, 0.6)";
+            $result['dataset']['borderColor'][]     = "rgba({$colour[0]}, {$colour[1]}, {$colour[2]}, 0.9)";
         }
 
         $result['datasets'] = [$result['dataset']];
