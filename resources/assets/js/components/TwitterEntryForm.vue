@@ -8,9 +8,6 @@
   <div>
     <div v-bind:class="{ container: !isContained }">
       <div class="panel panel-default">
-        <div class="panel-heading">
-          <span>Check Twitter user</span>
-        </div>
         <div class="panel-body">
           <div class="alert alert-danger" v-if="form.errors.length > 0">
             <p><strong>Whoops!</strong> Something went wrong!</p>
@@ -27,9 +24,12 @@
               <label class="control-label">Twitter User</label>
               <input id="twitter-user-name" class="form-control" name="user" v-model="form.user">
             </div>
-            <div class="form-group">
-              <button type="button" class="btn btn-primary form-control" @click="checkUser" :disabled="form.isProcessing" v-if="!form.isRedirecting">
+            <div class="form-group text-center">
+              <button type="button" class="btn btn-primary" @click="checkUser" :disabled="form.isProcessing" v-if="!form.isRedirecting">
                 Check user
+              </button>
+              <button type="button" class="btn btn-info" @click="showInformation" :disabled="form.isProcessing" v-if="!form.isRedirecting">
+                Information
               </button>
               <h2 v-if="form.isRedirecting">
                 Redirecting to result. Please wait...
@@ -98,20 +98,49 @@
           </div>
 
           <div class="modal-footer">
+            <button type="button" class="btn btn-default pull-left">Twitter Auth</button>
             <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             <button type="button" class="btn btn-primary" @click="verifyPin">Verify</button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Information modal -->
+    <div class="modal fade" id="modal-information" tabindex="-1" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">Information</h4>
+          </div>
+
+          <div class="modal-body">
+            <p>
+              This is an informational paragraph.
+            </p>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script>
   export default {
+    props: {
+      isContained: {
+        default: false,
+        type: Boolean
+      }
+    },
     data() {
       return {
-        isContained: false,
         twitterLink: "",
 
         form: {
@@ -187,6 +216,10 @@
             console.log(error);
           }
         })
+      },
+
+      showInformation() {
+        $('#modal-information').modal('show');
       },
 
       unpackErrorList(data, elem) {

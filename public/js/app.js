@@ -74313,11 +74313,40 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
+  props: {
+    isContained: {
+      default: false,
+      type: Boolean
+    }
+  },
   data: function data() {
     return {
-      isContained: false,
       twitterLink: "",
 
       form: {
@@ -74393,6 +74422,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         }
       });
     },
+    showInformation: function showInformation() {
+      $('#modal-information').modal('show');
+    },
     unpackErrorList: function unpackErrorList(data, elem) {
       var errors = 'Unknown error.';
 
@@ -74438,12 +74470,10 @@ var render = function() {
   return _c("div", [
     _c("div", { class: { container: !_vm.isContained } }, [
       _c("div", { staticClass: "panel panel-default" }, [
-        _vm._m(0, false, false),
-        _vm._v(" "),
         _c("div", { staticClass: "panel-body" }, [
           _vm.form.errors.length > 0
             ? _c("div", { staticClass: "alert alert-danger" }, [
-                _vm._m(1, false, false),
+                _vm._m(0, false, false),
                 _vm._v(" "),
                 _c("br"),
                 _vm._v(" "),
@@ -74501,12 +74531,12 @@ var render = function() {
                 })
               ]),
               _vm._v(" "),
-              _c("div", { staticClass: "form-group" }, [
+              _c("div", { staticClass: "form-group text-center" }, [
                 !_vm.form.isRedirecting
                   ? _c(
                       "button",
                       {
-                        staticClass: "btn btn-primary form-control",
+                        staticClass: "btn btn-primary",
                         attrs: {
                           type: "button",
                           disabled: _vm.form.isProcessing
@@ -74514,6 +74544,21 @@ var render = function() {
                         on: { click: _vm.checkUser }
                       },
                       [_vm._v("\n              Check user\n            ")]
+                    )
+                  : _vm._e(),
+                _vm._v(" "),
+                !_vm.form.isRedirecting
+                  ? _c(
+                      "button",
+                      {
+                        staticClass: "btn btn-info",
+                        attrs: {
+                          type: "button",
+                          disabled: _vm.form.isProcessing
+                        },
+                        on: { click: _vm.showInformation }
+                      },
+                      [_vm._v("\n              Information\n            ")]
                     )
                   : _vm._e(),
                 _vm._v(" "),
@@ -74551,12 +74596,12 @@ var render = function() {
       [
         _c("div", { staticClass: "modal-dialog" }, [
           _c("div", { staticClass: "modal-content" }, [
-            _vm._m(2, false, false),
+            _vm._m(1, false, false),
             _vm._v(" "),
             _c("div", { staticClass: "modal-body" }, [
               _vm.pinForm.errors.length > 0
                 ? _c("div", { staticClass: "alert alert-danger" }, [
-                    _vm._m(3, false, false),
+                    _vm._m(2, false, false),
                     _vm._v(" "),
                     _c("br"),
                     _vm._v(" "),
@@ -74683,6 +74728,15 @@ var render = function() {
               _c(
                 "button",
                 {
+                  staticClass: "btn btn-default pull-left",
+                  attrs: { type: "button" }
+                },
+                [_vm._v("Twitter Auth")]
+              ),
+              _vm._v(" "),
+              _c(
+                "button",
+                {
                   staticClass: "btn btn-default",
                   attrs: { type: "button", "data-dismiss": "modal" }
                 },
@@ -74702,18 +74756,12 @@ var render = function() {
           ])
         ])
       ]
-    )
+    ),
+    _vm._v(" "),
+    _vm._m(3, false, false)
   ])
 }
 var staticRenderFns = [
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "panel-heading" }, [
-      _c("span", [_vm._v("Check Twitter user")])
-    ])
-  },
   function() {
     var _vm = this
     var _h = _vm.$createElement
@@ -74752,6 +74800,59 @@ var staticRenderFns = [
       _c("strong", [_vm._v("Whoops!")]),
       _vm._v(" Something went wrong!")
     ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c(
+      "div",
+      {
+        staticClass: "modal fade",
+        attrs: { id: "modal-information", tabindex: "-1", role: "dialog" }
+      },
+      [
+        _c("div", { staticClass: "modal-dialog" }, [
+          _c("div", { staticClass: "modal-content" }, [
+            _c("div", { staticClass: "modal-header" }, [
+              _c(
+                "button",
+                {
+                  staticClass: "close",
+                  attrs: {
+                    type: "button",
+                    "data-dismiss": "modal",
+                    "aria-hidden": "true"
+                  }
+                },
+                [_vm._v("×")]
+              ),
+              _vm._v(" "),
+              _c("h4", { staticClass: "modal-title" }, [_vm._v("Information")])
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "modal-body" }, [
+              _c("p", [
+                _vm._v(
+                  "\n            This is an informational paragraph.\n          "
+                )
+              ])
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "modal-footer" }, [
+              _c(
+                "button",
+                {
+                  staticClass: "btn btn-default",
+                  attrs: { type: "button", "data-dismiss": "modal" }
+                },
+                [_vm._v("Close")]
+              )
+            ])
+          ])
+        ])
+      ]
+    )
   }
 ]
 render._withStripped = true
