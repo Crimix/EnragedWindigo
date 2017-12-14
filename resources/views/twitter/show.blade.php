@@ -7,7 +7,7 @@
   based on the American flag because reasons.
 </p>
 <p>
-  The user's location is marked by a green bar.
+  The target user's position in the chart is marked by a yellow bar.
 </p>
 @endsection
 
@@ -23,25 +23,14 @@
       </div>
       <div class="panel-body">
         <p>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat velit eum
-          deleniti vel doloribus harum nihil praesentium, illo unde numquam tenetur
-          veritatis reiciendis beatae quo iure corrupti rerum dolorum officiis!
+          To get these results, {{ $tweetCounts['total'] }} tweets were analysed
+          from {{ $userCount }} users, including the target user.
         </p>
-        <button data-toggle="collapse" data-target="#stats" class="btn btn-info">
-          More information and stats
-        </button>
-
-        <div id="stats" class="collapse" style="padding-top: 15px;">
-          <p>
-            To get these results, {{ $tweetCounts['total'] }} tweets were analysed
-            from {{ $userCount }} users, including the target user.
-          </p>
-          <p>
-            Of these tweets, {{ $tweetCounts['user'] }} of them was from the user,
-            and the average number of tweets per user (not including the target
-            user) is {{ round($tweetCounts['follows']['average'], 2) }}.
-          </p>
-        </div>
+        <p>
+          Of these tweets, {{ $tweetCounts['user'] }} of them was from the user,
+          and the average number of tweets per user (not including the target
+          user) is {{ round($tweetCounts['follows']['average'], 2) }}.
+        </p>
       </div>
     </div>
   </div>
@@ -71,6 +60,10 @@
           <p>
             On the sentiment axis (Y-axis) the higher the number the more positive our
             analysis says they are (on average).
+          </p>
+          <p>
+            On the political axis (X-axis) a lower value indicates a more left-leaning, political
+            views, and likewise a higher value indicates right-leaning, political views.
           </p>
         </div>
       </div>
@@ -140,7 +133,14 @@
               onclick="event.preventDefault();">more...</a>)
         </p>
         <div id="collapseSentimentBar" class="collapse" style="padding-top: 15px;">
-          @yield('barChartDesc')
+          <p>
+            The bars are coloured based on their location so that they go from red on the
+            left side, indicating negativity, to green on the right side, indicating
+            positivity.
+          </p>
+          <p>
+            The target user's position in the chart is marked by a yellow bar.
+          </p>
         </div>
       </div>
       <div class="panel-footer">

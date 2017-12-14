@@ -213,18 +213,30 @@ class DataProcessor
 
         foreach ($data as $i => $entry) {
             if ($entry['hasUser']) {
-                $colour = [38, 220, 38];
+                $colour = [220, 220, 38];
             } else {
-                $colour = [80, 80, 80];
+                if ($dataArea === 'sentiment') {
+                    if ($entry['end'] <= 0) {
+                        $multp = (($entry['begin'] + $entry['end']) / 2) / self::MIN_VAL;
+                        $colour = [floor(178 * $multp), floor(34 * $multp), floor(52 * $multp)];
+                    } elseif ($entry['begin'] >= 0) {
+                        $multp = (($entry['begin'] + $entry['end']) / 2) / self::MAX_VAL;
+                        $colour = [floor(30 * $multp), floor(220 * $multp), floor(30 * $multp)];
+                    }
+                } else {
+                    $colour = [80, 80, 80];
 
-                if ($entry['end'] < -1) {
-                    $multp = (($entry['begin'] + $entry['end']) / 2) / self::MIN_VAL;
-                    $colour = [floor(60 * $multp), floor(59 * $multp), floor(110 * $multp)];
-                } elseif ($entry['begin'] > 1) {
-                    $multp = (($entry['begin'] + $entry['end']) / 2) / self::MAX_VAL;
-                    $colour = [floor(178 * $multp), floor(34 * $multp), floor(52 * $multp)];
+                    if ($entry['end'] < -1) {
+                        $multp = (($entry['begin'] + $entry['end']) / 2) / self::MIN_VAL;
+                        $colour = [floor(60 * $multp), floor(59 * $multp), floor(110 * $multp)];
+                    } elseif ($entry['begin'] > 1) {
+                        $multp = (($entry['begin'] + $entry['end']) / 2) / self::MAX_VAL;
+                        $colour = [floor(178 * $multp), floor(34 * $multp), floor(52 * $multp)];
+                    }
                 }
             }
+
+            $borderColour = "rgba({$colour[0]}, {$colour[1]}, {$colour[2]}, 0.9)";
 
             $result['labels'][$i]                   = sprintf('%01.2f - %01.2f', $entry['begin'], $entry['end']);
             $result['dataset']['data'][]            = round((count($entry['entries']) / $totalEntries) * 100, 0);

@@ -22,11 +22,14 @@
           <form class="form" role="form" @submit.prevent="checkUser">
             <div class="form-group">
               <label class="control-label">Twitter User</label>
-              <input id="twitter-user-name" class="form-control" name="user" v-model="form.user">
+              <input id="twitter-user-name" class="form-control" name="user" v-model="form.user" :disabled="formIsWorking">
             </div>
-            <div class="form-group">
-              <button type="button" class="btn btn-primary form-control" @click="checkUser" :disabled="form.isProcessing" v-if="!form.isRedirecting">
+            <div class="form-group text-center">
+              <button type="button" class="btn btn-primary" @click="checkUser" :disabled="form.isProcessing" v-if="!form.isRedirecting">
                 Check user
+              </button>
+              <button type="button" class="btn btn-info" @click="showInformation" :disabled="form.isProcessing" v-if="!form.isRedirecting">
+                Information
               </button>
               <h2 v-if="form.isRedirecting">
                 Redirecting to result. Please wait...
@@ -70,9 +73,10 @@
             </p>
 
             <p>
-              In order to authenticate the app to do this, please visit
-              <a v-bind:href="twitterLink" target="_blank">Twitter Auth</a>
-              and once you have the PIN, enter it below to authorise the use.
+              In order to authenticate the app to do this, please use the Twitter Auth
+              button below, which will open the Twitter authentication page in a new tab.
+              Once you authorise the use of your account for the query, you will receive
+              a PIN. Enter it into the appropriate text field below to verify authorisation.
             </p>
 
             <p>
@@ -84,31 +88,97 @@
             <form class="form" role="form" @submit.prevent="verifyPin">
               <div class="form-group">
                 <label class="control-label">Twitter PIN</label>
-                <input id="twitter-pin" class="form-control" name="pin" v-model="pinForm.pin" required>
+                <input id="twitter-pin" class="form-control" name="pin" v-model="pinForm.pin" :disabled="pinFormIsWorking" required>
               </div>
 
               <div class="form-group">
                 <label class="control-label">Your email</label>
-                <input id="user-email" class="form-control" name="email" v-model="pinForm.email" required>
+                <input id="user-email" class="form-control" name="email" v-model="pinForm.email" :disabled="pinFormIsWorking" required>
               </div>
             </form>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" @click="verifyPin">Verify</button>
+            <a :href="twitterLink" target="_blank" class="btn btn-success pull-left" :disabled="pinFormIsWorking">Twitter Auth</a>
+            <button type="button" class="btn btn-default" data-dismiss="modal" :disabled="pinFormIsWorking">Close</button>
+            <button type="button" class="btn btn-primary" @click="verifyPin" :disabled="pinFormIsWorking">Verify</button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Information modal -->
+    <div class="modal fade" id="modal-information" tabindex="-1" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">About Enraged Windigo</h4>
+          </div>
+
+          <div class="modal-body">
+            <p>
+              <strong>What does it do?</strong><br>
+              Enraged Windigo is a tool for determining the political affiliation of the people
+              you follow on twitter. This works by analyzing tweets by you, and the people you
+              follow, and using algorithms to determine their political affiliation.
+            </p>
+
+            <p>
+              <strong>Why was it created?</strong><br>
+              Looking objectively at politics has become increasingly difficult in recent years,
+              as more and more media is simply brought in front of us to consume, without us taking
+              a critical look on who is presenting it to you, and what motivations they could have
+              to do as. As such, we aim to give you an insight into the political affiliation of the
+              people you follow on twitter, as this could help you to identify if you are only
+              recieving one-sided coverage.
+            </p>
+
+            <p>
+              <strong>Who are the developers?</strong><br>
+              The developers are a set of students at Aalborg University in Denmark. The developers
+              are all male, but have a wide variety in political beliefs, and affiliations.
+            </p>
+
+            <p>
+              <strong>What info do we require?</strong><br>
+              In order to determine the political affiliations of your peers, we need some data to
+              work with. As such, we will download up to 3200 tweets from you and each of the people
+              you follow. In these tweets we will look at the sentiment (happy/angry), certain
+              keywords (politicians/hashtags/legislature), and what news media people share.
+            </p>
+
+            <p>
+              <strong>Why do you need to authenticate?</strong><br>
+              In order to prevent misuse, Twitter has a system where each user has a certain amount
+              of data they can recieve from Twitter per 15 minute interval. As our application only
+              counts as a single user, we need to retrieve data on your behalf. And in order to do
+              this, we need your permission, which we can get through you authorizing. Don't worry,
+              the retrieval of data wont have any effect on your ability to enjoy twitter in the
+              meantime.
+            </p>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script>
   export default {
+    props: {
+      isContained: {
+        default: false,
+        type: Boolean
+      }
+    },
     data() {
       return {
-        isContained: false,
         twitterLink: "",
 
         form: {
@@ -119,6 +189,8 @@
         },
 
         pinForm: {
+          isProcessing: false,
+          isRedirecting: false,
           user: "",
           pin: "",
           email: "",
@@ -127,12 +199,21 @@
       };
     },
 
+    computed: {
+      formIsWorking: function() {
+        return this.form.isProcessing || this.form.isRedirecting;
+      },
+
+      pinFormIsWorking: function() {
+        return this.pinForm.isProcessing || this.pinForm.isRedirecting;
+      }
+    },
+
     mounted() {},
 
     methods: {
       checkUser() {
         this.form.errors = [];
-
         this.form.isProcessing = true;
 
         axios.post('/twitter/vue/check', {
@@ -154,17 +235,15 @@
 
           if (error.response) {
             this.unpackErrorList(error.response.data, this.form);
-
-            console.log(error.response);
           } else {
             this.form.errors = ['Request failed with an undefined error!'];
-            console.log(error);
           }
         });
       },
 
       verifyPin() {
         this.pinForm.errors = [];
+        this.pinForm.isProcessing = true;
 
         axios.post('/twitter/vue/check_pin', {
           'twitter_user': this.form.user,
@@ -172,18 +251,23 @@
           'email': this.pinForm.email
         })
         .then(response => {
+          this.pinForm.isProcessing = false;
+          this.pinForm.isRedirecting = true;
           window.location.href = response.data.redirectTo;
         })
         .catch(error => {
+          this.pinForm.isProcessing = false;
+
           if (error.response) {
             this.unpackErrorList(error.response.data, this.pinForm);
-
-            console.log(error.response);
           } else {
             this.pinForm.errors = ['Request failed with an undefined error!'];
-            console.log(error);
           }
         })
+      },
+
+      showInformation() {
+        $('#modal-information').modal('show');
       },
 
       unpackErrorList(data, elem) {
