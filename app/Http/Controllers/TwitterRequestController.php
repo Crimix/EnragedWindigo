@@ -17,22 +17,6 @@ use GuzzleHttp\Client as GuzzleClient;
 class TwitterRequestController extends Controller
 {
     /**
-     * Instantiate controller and setup middleware.
-     */
-    public function __construct()
-    {
-        $this->middleware('twitter.auth')->only(['create', 'store']);
-    }
-
-    /**
-     *
-     */
-    public function index()
-    {
-        return view('twitter.index');
-    }
-
-    /**
      *
      */
     public function show(Request $request, DataProcessor $processor)
@@ -245,14 +229,6 @@ class TwitterRequestController extends Controller
     public function done(TwitterRequest $twitterRequest)
     {
         return view('twitter.done', ['twitterRequest' => $twitterRequest]);
-    }
-
-    /**
-     *
-     */
-    public function missingAuth()
-    {
-        return view('twitter.missingAuth');
     }
 
     /**

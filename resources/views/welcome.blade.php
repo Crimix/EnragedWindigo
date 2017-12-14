@@ -89,8 +89,7 @@
         </div>
 
         <div style="max-width: 700px;" class="m-b-md">
-          Introductional text blah blah blah.<br>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Sequi, doloribus. Quasi illo facilis repellat repudiandae saepe. Officiis totam voluptas ea quod est, fugiat nobis nihil eveniet eius blanditiis ullam? Quis!
+          Tries to identify a Twitter user's bias, including that of those they follow.
         </div>
 
         @if (session('error'))

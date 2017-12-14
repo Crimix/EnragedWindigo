@@ -28,8 +28,6 @@ Route::post('password/reset', 'Auth\ForgotPasswordController@reset');
 
 Route::get('/home', 'HomeController@index')->name('home');
 
-Route::get('/twitter', 'TwitterRequestController@index')->name('twitter.index');
-Route::get('/twitter/missing_auth', 'TwitterRequestController@missingAuth')->name('twitter.missingAuth');
 Route::post('/twitter/vue/check', 'TwitterRequestController@vueCheck');
 Route::post('/twitter/vue/check_pin', 'TwitterRequestController@vueCheckPin');
 Route::get('/twitter/show', 'TwitterRequestController@show')->name('twitter.result');
