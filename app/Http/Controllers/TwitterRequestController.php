@@ -34,7 +34,7 @@ class TwitterRequestController extends Controller
         $result         = null;
         $requestId      = $request->input('request_id');
         $recordId       = $request->input('record_id');
-        $twitterName    = $request->input('twitter_user');
+        $twitterName    = $request->input('twitter_user', '');
         $guzzle         = new GuzzleClient([
             'base_uri'    => config('ew.ewdb.url'),
             'http_errors' => false,
@@ -78,7 +78,8 @@ class TwitterRequestController extends Controller
             }
         }
 
-        if (empty($result) || ($twitterName != $result['user']['twitter_name'])) {
+        if (empty($result) || (strtolower($twitterName)
+                                != strtolower($result['user']['twitter_name']))) {
             return response('Request not found!', 404);
         }
 
